@@ -29,6 +29,8 @@ import {
   MessageCircle,
   ShoppingBag,
   Zap,
+  Ticket,
+  BarChart3,
 } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from './lib/supabase';
 import BusinessPromoForm from './components/BusinessPromoForm';
@@ -36,6 +38,8 @@ import PromoList from './components/PromoList';
 import AuthModal from './components/AuthModal';
 import RegisterBusinessModal from './components/RegisterBusinessModal';
 import RepublishPromoModal from './components/RepublishPromoModal';
+import ModalCanjeTemporal from './components/ModalCanjeTemporal';
+import PanelCanjesYMetricas from './components/PanelCanjesYMetricas';
 import LocationPicker from './components/LocationPicker';
 
 const OBELISCO_CABA = { lat: -34.6037, lng: -58.3816 };
@@ -55,7 +59,10 @@ function formatUbicacionDisplay(comercio) {
   if (match) {
     return match[1];
   }
-  if (typeof comercio?.ubicacion === 'string' && comercio.ubicacion.startsWith('POINT')) {
+  if (
+    typeof comercio?.ubicacion === 'string' &&
+    comercio.ubicacion.startsWith('POINT')
+  ) {
     const coords = comercio.ubicacion
       .replace('POINT(', '')
       .replace(')', '')
@@ -87,9 +94,9 @@ function formatRemainingTime(venceEl) {
   const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
   const minutes = totalMinutes % 60;
 
-  if (days > 0) return `${days}d ${hours}h restantes`;
-  if (hours > 0) return `${hours}h ${minutes}m restantes`;
-  return `${minutes}m restantes`;
+  if (days > 0) return `${days}d ${hours}h`;
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  return `${minutes}m`;
 }
 
 function buildWhatsAppUrl(telefono, tituloPromo, nombreComercio) {
@@ -97,7 +104,7 @@ function buildWhatsAppUrl(telefono, tituloPromo, nombreComercio) {
   const cleanPhone = String(telefono).replace(/[^\d]/g, '');
   if (!cleanPhone) return null;
   const text = encodeURIComponent(
-    `¡Hola ${nombreComercio || ''}! Guardé tu promoción "${tituloPromo}" en OfertAr y me gustaría consultarte.`
+    `Hola ${nombreComercio || ''}, guardé tu promoción "${tituloPromo}" en OfertAr y me gustaría consultarte.`
   );
   return `https://wa.me/${cleanPhone}?text=${text}`;
 }
@@ -127,7 +134,10 @@ export default function App() {
   // Modal de confirmación de eliminación definitiva
   const [promoToDelete, setPromoToDelete] = useState(null);
 
-  // Control de qué sucursales tienen desplegadas sus promociones y qué sub-pestaña ('activas' | 'vencidas')
+  // Modal de Canje Temporal (PIN de 5 minutos para el vecino)
+  const [promoForCanje, setPromoForCanje] = useState(null);
+
+  // Control de qué sucursales tienen desplegadas sus promociones y qué sub-pestaña ('activas' | 'vencidas' | 'metricas')
   const [expandedComercios, setExpandedComercios] = useState({});
   const [comercioPromoTab, setComercioPromoTab] = useState({});
   const [archivingPromoId, setArchivingPromoId] = useState(null);
@@ -276,7 +286,7 @@ export default function App() {
         await fetchUserFavoritos(session.user.id);
         showTemporaryFeedback(
           'success',
-          `¡Guardaste "${promoTitulo}" en Mis Ofertas Guardadas!`
+          `Guardaste "${promoTitulo}" en Mis Ofertas Guardadas.`
         );
       }
     } catch (err) {
@@ -413,7 +423,7 @@ export default function App() {
     setActiveTab('comercios');
     showTemporaryFeedback(
       'success',
-      `¡El local "${nuevoComercio.nombre}" fue vinculado a tu cuenta!`
+      `El local "${nuevoComercio.nombre}" fue vinculado a tu cuenta.`
     );
   };
 
@@ -437,7 +447,7 @@ export default function App() {
     } else if (session?.user?.id) {
       fetchUserComercios(session.user.id);
     }
-    showTemporaryFeedback('success', '¡Promoción publicada y activa en el barrio!');
+    showTemporaryFeedback('success', 'Promoción publicada y activa en el barrio.');
     setTimeout(() => {
       setIsPromoModalOpen(false);
     }, 700);
@@ -466,7 +476,7 @@ export default function App() {
     setRefreshKey((prev) => prev + 1);
     showTemporaryFeedback(
       'success',
-      `¡La promoción "${updatedPromo.titulo}" volvió a activarse y ya figura en Promociones Activas!`
+      `La promoción "${updatedPromo.titulo}" volvió a activarse y ya figura en Promociones Activas.`
     );
   };
 
@@ -585,23 +595,25 @@ export default function App() {
   }, 0);
 
   return (
-    <div className="min-h-full bg-slate-50 text-slate-900 flex flex-col">
-      {/* Cabecera y Barra de Pestañas */}
-      <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 backdrop-blur">
+    <div className="min-h-full bg-[#FAFAF9] text-stone-900 flex flex-col">
+      {/* Cabecera translúcida y Barra de Pestañas */}
+      <header className="sticky top-0 z-20 border-b border-stone-200 bg-[#FAFAF9]/85 backdrop-blur-md">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex flex-wrap items-center justify-between gap-3 py-3.5">
+            {/* Logo tipográfico nítido */}
             <div
               onClick={() => handleSelectTab('explorar')}
-              className="flex items-center gap-3 cursor-pointer"
+              className="flex items-center gap-3 cursor-pointer group"
             >
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-xs">
-                <MapPin className="h-5 w-5" />
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-xs group-hover:bg-emerald-700 transition-all duration-200">
+                <MapPin className="h-5 w-5" strokeWidth={1.75} />
               </div>
               <div>
-                <h1 className="text-lg font-extrabold tracking-tight text-slate-900 sm:text-xl">
-                  OfertAr · TesProm
+                <h1 className="font-display text-lg font-extrabold tracking-tight text-stone-900 sm:text-xl leading-none">
+                  Ofert<span className="text-emerald-600">Ar</span>
+                  <span className="ml-1.5 inline-block h-1.5 w-1.5 rounded-full bg-emerald-600 align-middle" />
                 </h1>
-                <p className="text-xs text-slate-500">
+                <p className="text-[11px] font-medium text-stone-500 mt-0.5">
                   Promociones barriales en tiempo real
                 </p>
               </div>
@@ -613,40 +625,36 @@ export default function App() {
                 <button
                   type="button"
                   onClick={() => setIsAuthModalOpen(true)}
-                  className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-xs sm:text-sm font-semibold text-white shadow-xs hover:bg-indigo-700 transition cursor-pointer"
+                  className="font-display inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-xs sm:text-sm font-bold text-white shadow-sm hover:bg-emerald-700 transition-all duration-200 cursor-pointer"
                 >
-                  <LogIn className="h-4 w-4" />
+                  <LogIn className="h-4 w-4" strokeWidth={1.75} />
                   Ingresar
                 </button>
               ) : (
                 <>
-                  {comercios.length > 0 ? (
-                    <button
-                      type="button"
-                      onClick={() => handleOpenNewPromo(comercios[0].id)}
-                      className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-3.5 py-2 text-xs sm:text-sm font-semibold text-white shadow-xs hover:bg-indigo-700 transition cursor-pointer"
-                    >
-                      <Plus className="h-4 w-4" />
-                      + Publicar Promo
-                    </button>
-                  ) : (
+                  {comercios.length === 0 && (
                     <button
                       type="button"
                       onClick={() => setIsRegisterBusinessOpen(true)}
-                      className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-3.5 py-2 text-xs sm:text-sm font-semibold text-white shadow-xs hover:bg-indigo-700 transition cursor-pointer"
+                      className="font-display inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs sm:text-sm font-bold text-white shadow-sm hover:bg-emerald-700 transition-all duration-200 cursor-pointer"
                     >
-                      <Plus className="h-4 w-4" />
-                      + Activar Negocio
+                      <Plus className="h-4 w-4" strokeWidth={1.75} />
+                      Activar Negocio
                     </button>
                   )}
 
                   <button
                     type="button"
                     onClick={() => handleSelectTab('perfil')}
-                    className="hidden md:inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-700 border border-slate-200 hover:bg-slate-200/70 transition cursor-pointer"
+                    className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs font-medium text-stone-700 border border-stone-200/80 shadow-2xs hover:border-stone-300 transition-all duration-200 cursor-pointer"
                   >
-                    <User className="h-3.5 w-3.5 text-indigo-600" />
-                    {session.user.email}
+                    <User
+                      className="h-4 w-4 text-emerald-600"
+                      strokeWidth={1.75}
+                    />
+                    <span className="max-w-[160px] sm:max-w-none truncate">
+                      {session.user.email}
+                    </span>
                   </button>
                 </>
               )}
@@ -655,36 +663,39 @@ export default function App() {
 
           {/* Barra de navegación por Pestañas (Tabs) */}
           <nav
-            className="flex items-center gap-1 border-t border-slate-100 pt-1 overflow-x-auto"
+            className="flex items-center gap-1 border-t border-stone-200/70 pt-1 overflow-x-auto"
             aria-label="Secciones principales"
           >
             <button
               type="button"
               onClick={() => handleSelectTab('explorar')}
-              className={`inline-flex items-center gap-2 border-b-2 px-4 py-2.5 text-xs sm:text-sm font-semibold transition cursor-pointer whitespace-nowrap ${
+              className={`font-display inline-flex items-center gap-2 border-b-2 px-4 py-2.5 text-xs sm:text-sm font-bold transition-all duration-200 cursor-pointer whitespace-nowrap ${
                 activeTab === 'explorar'
-                  ? 'border-indigo-600 text-indigo-600'
-                  : 'border-transparent text-slate-600 hover:border-slate-300 hover:text-slate-900'
+                  ? 'border-emerald-600 text-emerald-700'
+                  : 'border-transparent text-stone-600 hover:border-stone-300 hover:text-stone-900'
               }`}
             >
-              <Compass className="h-4 w-4" />
+              <Compass className="h-4 w-4" strokeWidth={1.75} />
               Explorar
             </button>
 
             <button
               type="button"
               onClick={() => handleSelectTab('perfil')}
-              className={`inline-flex items-center gap-2 border-b-2 px-4 py-2.5 text-xs sm:text-sm font-semibold transition cursor-pointer whitespace-nowrap ${
+              className={`font-display inline-flex items-center gap-2 border-b-2 px-4 py-2.5 text-xs sm:text-sm font-bold transition-all duration-200 cursor-pointer whitespace-nowrap ${
                 activeTab === 'perfil'
-                  ? 'border-indigo-600 text-indigo-600'
-                  : 'border-transparent text-slate-600 hover:border-slate-300 hover:text-slate-900'
+                  ? 'border-emerald-600 text-emerald-700'
+                  : 'border-transparent text-stone-600 hover:border-stone-300 hover:text-stone-900'
               }`}
             >
-              <User className="h-4 w-4" />
+              <User className="h-4 w-4" strokeWidth={1.75} />
               Mi Perfil
               {session && favoritos.length > 0 && (
-                <span className="ml-1 inline-flex items-center gap-0.5 rounded-full bg-rose-50 px-2 py-0.5 text-xs font-bold text-rose-600">
-                  <Heart className="h-3 w-3 fill-rose-500 text-rose-500" />
+                <span className="ml-1 inline-flex items-center gap-1 rounded-full bg-rose-50 border border-rose-200/60 px-2 py-0.5 text-xs font-bold text-rose-700 tabular-nums">
+                  <Heart
+                    className="h-3 w-3 fill-rose-500 text-rose-500"
+                    strokeWidth={1.75}
+                  />
                   {favoritos.length}
                 </span>
               )}
@@ -694,15 +705,15 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => handleSelectTab('comercios')}
-                className={`inline-flex items-center gap-2 border-b-2 px-4 py-2.5 text-xs sm:text-sm font-semibold transition cursor-pointer whitespace-nowrap ${
+                className={`font-display inline-flex items-center gap-2 border-b-2 px-4 py-2.5 text-xs sm:text-sm font-bold transition-all duration-200 cursor-pointer whitespace-nowrap ${
                   activeTab === 'comercios'
-                    ? 'border-indigo-600 text-indigo-600'
-                    : 'border-transparent text-slate-600 hover:border-slate-300 hover:text-slate-900'
+                    ? 'border-emerald-600 text-emerald-700'
+                    : 'border-transparent text-stone-600 hover:border-stone-300 hover:text-stone-900'
                 }`}
               >
-                <Store className="h-4 w-4" />
+                <Store className="h-4 w-4" strokeWidth={1.75} />
                 Mis Comercios
-                <span className="ml-1 rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-bold text-indigo-700">
+                <span className="ml-1 rounded-full bg-emerald-50 border border-emerald-200/60 px-2 py-0.5 text-xs font-bold text-emerald-700 tabular-nums">
                   {comercios.length}
                 </span>
               </button>
@@ -715,19 +726,25 @@ export default function App() {
       {feedbackBanner && (
         <div className="mx-auto w-full max-w-7xl px-4 pt-4 sm:px-6 lg:px-8">
           <div
-            className={`flex items-center justify-between gap-3 rounded-xl border px-4 py-3 text-sm shadow-xs ${
+            className={`flex items-center justify-between gap-3 rounded-xl border px-4 py-3 text-sm shadow-sm ${
               feedbackBanner.type === 'error'
-                ? 'border-red-200 bg-red-50 text-red-800'
+                ? 'border-red-200/80 bg-red-50 text-red-800'
                 : feedbackBanner.type === 'info'
-                  ? 'border-indigo-200 bg-indigo-50 text-indigo-900'
-                  : 'border-emerald-300 bg-emerald-50 text-emerald-900'
+                  ? 'border-amber-200/80 bg-amber-50 text-amber-900'
+                  : 'border-emerald-200/80 bg-emerald-50 text-emerald-900'
             }`}
           >
             <div className="flex items-center gap-2.5">
               {feedbackBanner.type === 'error' ? (
-                <AlertCircle className="h-5 w-5 text-red-600 shrink-0" />
+                <AlertCircle
+                  className="h-5 w-5 text-red-600 shrink-0"
+                  strokeWidth={1.75}
+                />
               ) : (
-                <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
+                <CheckCircle2
+                  className="h-5 w-5 text-emerald-600 shrink-0"
+                  strokeWidth={1.75}
+                />
               )}
               <span className="font-semibold">{feedbackBanner.message}</span>
             </div>
@@ -748,14 +765,17 @@ export default function App() {
         {activeTab === 'explorar' && (
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-12 items-start">
             <div className="lg:col-span-5 space-y-4">
-              <div className="rounded-2xl bg-white p-5 shadow-xs border border-slate-200 space-y-4">
+              <div className="rounded-2xl bg-white p-5 shadow-sm border border-stone-200/80 space-y-4">
                 <div className="flex items-start justify-between gap-2">
                   <div>
-                    <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                      <Compass className="h-5 w-5 text-indigo-600" />
+                    <h2 className="font-display text-lg font-bold text-stone-900 flex items-center gap-2">
+                      <Compass
+                        className="h-5 w-5 text-emerald-600"
+                        strokeWidth={1.75}
+                      />
                       Mapa y Radio de Búsqueda
                     </h2>
-                    <p className="text-xs text-slate-500 mt-0.5">
+                    <p className="text-xs text-stone-600 mt-0.5">
                       {geoStatus === 'activa'
                         ? 'Ubicación actual detectada por GPS.'
                         : geoStatus === 'detectando'
@@ -768,17 +788,23 @@ export default function App() {
                     type="button"
                     onClick={requestUserGeolocation}
                     title="Centrar en mi ubicación actual"
-                    className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition cursor-pointer shrink-0"
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-stone-200/80 bg-[#FAFAF9] px-3 py-1.5 text-xs font-semibold text-stone-700 hover:border-stone-300 hover:bg-stone-100 transition-all duration-200 cursor-pointer shrink-0"
                   >
-                    <LocateFixed className="h-3.5 w-3.5 text-indigo-600" />
+                    <LocateFixed
+                      className="h-4 w-4 text-emerald-600"
+                      strokeWidth={1.75}
+                    />
                     Mi ubicación
                   </button>
                 </div>
 
                 {/* Selector de Radio: 500m, 1 km, 3 km, 5 km */}
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
-                    <Radio className="h-3.5 w-3.5 text-indigo-600" />
+                  <label className="text-xs font-semibold text-stone-700 flex items-center gap-1.5">
+                    <Radio
+                      className="h-4 w-4 text-emerald-600"
+                      strokeWidth={1.75}
+                    />
                     Radio de búsqueda:
                   </label>
                   <div className="grid grid-cols-4 gap-2">
@@ -789,10 +815,10 @@ export default function App() {
                           key={r.meters}
                           type="button"
                           onClick={() => setSearchRadiusMeters(r.meters)}
-                          className={`rounded-xl border py-1.5 text-xs font-semibold transition cursor-pointer ${
+                          className={`rounded-xl border py-1.5 text-xs font-semibold tabular-nums transition-all duration-200 cursor-pointer ${
                             active
-                              ? 'border-indigo-600 bg-indigo-50 text-indigo-700 ring-2 ring-indigo-600/15'
-                              : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                              ? 'border-emerald-600 bg-emerald-50 text-emerald-700 ring-2 ring-emerald-600/15'
+                              : 'border-stone-200/80 bg-white text-stone-600 hover:border-stone-300 hover:bg-stone-50'
                           }`}
                         >
                           {r.label}
@@ -825,6 +851,7 @@ export default function App() {
                 favoriteIds={favoriteIds}
                 togglingFavoriteId={togglingFavoriteId}
                 onToggleFavorite={handleToggleFavorite}
+                onOpenCanjeModal={(promo) => setPromoForCanje(promo)}
               />
             </div>
           </div>
@@ -834,44 +861,44 @@ export default function App() {
         {activeTab === 'perfil' && (
           <div className="mx-auto max-w-4xl space-y-6">
             {!session ? (
-              <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-xs space-y-4">
-                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600">
-                  <User className="h-7 w-7" />
+              <div className="rounded-2xl border border-stone-200/80 bg-white p-8 text-center shadow-sm space-y-4">
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700 border border-emerald-200/60">
+                  <User className="h-6 w-6" strokeWidth={1.75} />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold text-slate-900">
+                  <h2 className="font-display text-xl font-bold text-stone-900">
                     Inicia sesión en tu cuenta
                   </h2>
-                  <p className="mt-1 text-sm text-slate-500">
+                  <p className="mt-1 text-sm text-stone-600">
                     Accede con tu correo para guardar tus ofertas favoritas, administrar tu perfil o activar tu comercio.
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setIsAuthModalOpen(true)}
-                  className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-xs hover:bg-indigo-700 transition cursor-pointer"
+                  className="font-display inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-emerald-700 transition-all duration-200 cursor-pointer"
                 >
-                  <LogIn className="h-4 w-4" />
+                  <LogIn className="h-4 w-4" strokeWidth={1.75} />
                   Ingresar / Crear Cuenta
                 </button>
               </div>
             ) : (
               <>
                 {/* Encabezado de Mi Perfil y Acciones de Cuenta */}
-                <div className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs space-y-6">
-                  <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-6">
+                <div className="rounded-2xl border border-stone-200/80 bg-white p-6 sm:p-8 shadow-sm space-y-6">
+                  <div className="flex flex-wrap items-center justify-between gap-4 border-b border-stone-200/80 pb-6">
                     <div className="flex items-center gap-4">
-                      <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-600 to-indigo-500 text-white shadow-sm">
-                        <User className="h-8 w-8" />
+                      <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-xs">
+                        <User className="h-8 w-8" strokeWidth={1.75} />
                       </div>
                       <div>
-                        <span className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">
+                        <span className="inline-flex items-center rounded-full bg-emerald-50 border border-emerald-200/60 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">
                           Vecino / Cuenta activa
                         </span>
-                        <h2 className="text-xl font-bold text-slate-900 mt-1">
+                        <h2 className="font-display text-xl font-bold text-stone-900 mt-1">
                           Mi Perfil
                         </h2>
-                        <p className="text-xs text-slate-500">
+                        <p className="text-xs text-stone-600">
                           {session.user.email}
                         </p>
                       </div>
@@ -880,30 +907,36 @@ export default function App() {
                     <button
                       type="button"
                       onClick={handleSignOut}
-                      className="inline-flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-xs sm:text-sm font-semibold text-red-700 hover:bg-red-100 transition cursor-pointer"
+                      className="inline-flex items-center gap-2 rounded-xl border border-stone-200/90 bg-white px-4 py-2 text-xs sm:text-sm font-semibold text-stone-700 hover:border-red-200 hover:bg-red-50 hover:text-red-700 transition-all duration-200 cursor-pointer"
                     >
-                      <LogOut className="h-4 w-4" />
+                      <LogOut className="h-4 w-4" strokeWidth={1.75} />
                       Cerrar Sesión
                     </button>
                   </div>
 
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-4 space-y-1">
-                      <span className="text-xs font-medium text-slate-500 flex items-center gap-1.5">
-                        <Mail className="h-3.5 w-3.5 text-indigo-600" />
+                    <div className="rounded-xl border border-stone-200/80 bg-[#FAFAF9] p-4 space-y-1">
+                      <span className="text-xs font-medium text-stone-600 flex items-center gap-1.5">
+                        <Mail
+                          className="h-4 w-4 text-emerald-600"
+                          strokeWidth={1.75}
+                        />
                         Correo electrónico registrado
                       </span>
-                      <p className="text-sm font-semibold text-slate-900 break-all">
+                      <p className="text-sm font-semibold text-stone-900 break-all">
                         {session.user.email}
                       </p>
                     </div>
 
-                    <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-4 space-y-1">
-                      <span className="text-xs font-medium text-slate-500 flex items-center gap-1.5">
-                        <Calendar className="h-3.5 w-3.5 text-indigo-600" />
+                    <div className="rounded-xl border border-stone-200/80 bg-[#FAFAF9] p-4 space-y-1">
+                      <span className="text-xs font-medium text-stone-600 flex items-center gap-1.5">
+                        <Calendar
+                          className="h-4 w-4 text-emerald-600"
+                          strokeWidth={1.75}
+                        />
                         Fecha de registro
                       </span>
-                      <p className="text-sm font-semibold text-slate-900">
+                      <p className="text-sm font-semibold text-stone-900 tabular-nums">
                         {session.user.created_at
                           ? new Date(session.user.created_at).toLocaleDateString(
                               'es-AR',
@@ -920,13 +953,16 @@ export default function App() {
 
                   {/* Banner para activar negocio si aún no tiene local, o resumen comercial */}
                   {comercios.length === 0 ? (
-                    <div className="rounded-2xl border border-indigo-200 bg-gradient-to-r from-indigo-50 to-slate-50 p-5 flex flex-wrap items-center justify-between gap-4">
+                    <div className="rounded-2xl border border-emerald-200/70 bg-emerald-50/40 p-5 flex flex-wrap items-center justify-between gap-4">
                       <div className="space-y-1 max-w-lg">
-                        <p className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
-                          <Store className="h-4 w-4 text-indigo-600" />
+                        <p className="font-display text-sm font-bold text-stone-900 flex items-center gap-1.5">
+                          <Store
+                            className="h-4 w-4 text-emerald-600"
+                            strokeWidth={1.75}
+                          />
                           ¿Tienes un comercio o emprendimiento en el barrio?
                         </p>
-                        <p className="text-xs text-slate-600">
+                        <p className="text-xs text-stone-600">
                           Activa tu perfil comercial gratis, ubica tu local en el mapa y publica promociones estándar o relámpago para tus vecinos.
                         </p>
                       </div>
@@ -934,28 +970,28 @@ export default function App() {
                       <button
                         type="button"
                         onClick={() => setIsRegisterBusinessOpen(true)}
-                        className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2.5 text-xs sm:text-sm font-semibold text-white shadow-xs hover:bg-indigo-700 transition cursor-pointer"
+                        className="font-display inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs sm:text-sm font-bold text-white shadow-sm hover:bg-emerald-700 transition-all duration-200 cursor-pointer"
                       >
-                        <Plus className="h-4 w-4" />
-                        + Activar mi Negocio / Registrar Comercio
+                        <Plus className="h-4 w-4" strokeWidth={1.75} />
+                        Activar mi Negocio / Registrar Comercio
                       </button>
                     </div>
                   ) : (
-                    <div className="rounded-xl border border-indigo-100 bg-indigo-50/50 p-4 flex flex-wrap items-center justify-between gap-4">
+                    <div className="rounded-xl border border-stone-200/80 bg-[#FAFAF9] p-4 flex flex-wrap items-center justify-between gap-4">
                       <div className="space-y-0.5">
-                        <p className="text-sm font-bold text-slate-900">
+                        <p className="font-display text-sm font-bold text-stone-900">
                           Resumen comercial de tu cuenta
                         </p>
-                        <p className="text-xs text-slate-600">
+                        <p className="text-xs text-stone-600 tabular-nums">
                           Tienes{' '}
-                          <strong className="text-indigo-700">
+                          <strong className="text-emerald-700">
                             {comercios.length}{' '}
                             {comercios.length === 1
                               ? 'local registrado'
                               : 'locales registrados'}
                           </strong>{' '}
                           y{' '}
-                          <strong className="text-indigo-700">
+                          <strong className="text-emerald-700">
                             {totalPromosActivasUsuario}{' '}
                             {totalPromosActivasUsuario === 1
                               ? 'promoción activa'
@@ -969,17 +1005,17 @@ export default function App() {
                         <button
                           type="button"
                           onClick={() => setIsRegisterBusinessOpen(true)}
-                          className="inline-flex items-center gap-1.5 rounded-xl border border-indigo-200 bg-white px-3.5 py-2 text-xs font-semibold text-indigo-700 hover:bg-indigo-50 transition cursor-pointer"
+                          className="inline-flex items-center gap-1.5 rounded-xl border border-stone-200/90 bg-white px-3.5 py-2 text-xs font-semibold text-stone-700 hover:border-stone-300 hover:bg-stone-50 transition-all duration-200 cursor-pointer"
                         >
-                          <Plus className="h-3.5 w-3.5" />
-                          + Registrar otro comercio
+                          <Plus className="h-4 w-4" strokeWidth={1.75} />
+                          Registrar otro comercio
                         </button>
                         <button
                           type="button"
                           onClick={() => handleSelectTab('comercios')}
-                          className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-700 transition cursor-pointer"
+                          className="font-display inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-700 transition-all duration-200 cursor-pointer"
                         >
-                          <Store className="h-4 w-4" />
+                          <Store className="h-4 w-4" strokeWidth={1.75} />
                           Ir a Mis Comercios
                         </button>
                       </div>
@@ -988,48 +1024,57 @@ export default function App() {
                 </div>
 
                 {/* Sección interna: Mis Ofertas Guardadas */}
-                <div className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs space-y-5">
-                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-4">
+                <div className="rounded-2xl border border-stone-200/80 bg-white p-6 sm:p-8 shadow-sm space-y-5">
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-stone-200/80 pb-4">
                     <div>
-                      <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                        <Heart className="h-5 w-5 fill-rose-500 text-rose-500" />
+                      <h3 className="font-display text-lg font-bold text-stone-900 flex items-center gap-2">
+                        <Heart
+                          className="h-5 w-5 fill-rose-500 text-rose-500"
+                          strokeWidth={1.75}
+                        />
                         Mis Ofertas Guardadas
                       </h3>
-                      <p className="text-xs text-slate-500 mt-0.5">
+                      <p className="text-xs text-stone-600 mt-0.5">
                         Accede rápido a las promociones que marcaste como favoritas en tu barrio.
                       </p>
                     </div>
 
-                    <span className="rounded-full bg-rose-50 px-3 py-1 text-xs font-bold text-rose-600">
+                    <span className="rounded-full bg-rose-50 border border-rose-200/60 px-3 py-1 text-xs font-bold text-rose-700 tabular-nums">
                       {favoritos.length}{' '}
                       {favoritos.length === 1 ? 'guardada' : 'guardadas'}
                     </span>
                   </div>
 
                   {loadingFavoritos ? (
-                    <div className="flex items-center justify-center py-10 text-slate-500 gap-2">
-                      <Loader2 className="h-5 w-5 animate-spin text-indigo-600" />
+                    <div className="flex items-center justify-center py-10 text-stone-600 gap-2">
+                      <Loader2
+                        className="h-5 w-5 animate-spin text-emerald-600"
+                        strokeWidth={1.75}
+                      />
                       <span className="text-sm">
                         Cargando tus ofertas guardadas...
                       </span>
                     </div>
                   ) : favoritos.length === 0 ? (
-                    <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 p-10 text-center space-y-3">
-                      <Heart className="mx-auto h-9 w-9 text-slate-300" />
+                    <div className="rounded-2xl border border-dashed border-stone-300 bg-[#FAFAF9] p-10 text-center space-y-3">
+                      <Heart
+                        className="mx-auto h-9 w-9 text-stone-400"
+                        strokeWidth={1.75}
+                      />
                       <div>
-                        <p className="text-sm font-bold text-slate-800">
+                        <p className="font-display text-sm font-bold text-stone-900">
                           Todavía no tienes ofertas guardadas
                         </p>
-                        <p className="text-xs text-slate-500 mt-1">
+                        <p className="text-xs text-stone-600 mt-1">
                           Toca el ícono de corazón en cualquier tarjeta de la pestaña Explorar para guardarla aquí.
                         </p>
                       </div>
                       <button
                         type="button"
                         onClick={() => handleSelectTab('explorar')}
-                        className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-700 transition cursor-pointer"
+                        className="font-display inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-700 transition-all duration-200 cursor-pointer"
                       >
-                        <Compass className="h-3.5 w-3.5" />
+                        <Compass className="h-4 w-4" strokeWidth={1.75} />
                         Explorar promociones cercanas
                       </button>
                     </div>
@@ -1057,10 +1102,10 @@ export default function App() {
                         return (
                           <article
                             key={fav.promocion_id}
-                            className={`flex flex-col justify-between overflow-hidden rounded-2xl border transition ${
+                            className={`flex flex-col justify-between overflow-hidden rounded-2xl border transition-all duration-200 ${
                               vigente
-                                ? 'border-slate-200 bg-white shadow-2xs hover:shadow-md'
-                                : 'border-slate-200 bg-slate-100/80 opacity-85'
+                                ? 'border-stone-200/80 bg-white shadow-sm hover:border-stone-300'
+                                : 'border-stone-200/80 bg-stone-100/70 opacity-85'
                             }`}
                           >
                             <div>
@@ -1069,19 +1114,25 @@ export default function App() {
                                   <img
                                     src={promo.imagen_url}
                                     alt={promo.titulo}
-                                    className={`h-36 w-full object-cover ${
+                                    className={`h-36 w-full object-cover border-b border-stone-100 ${
                                       !vigente ? 'grayscale' : ''
                                     }`}
                                   />
                                 ) : (
-                                  <div className="flex h-32 w-full items-center justify-center bg-gradient-to-br from-indigo-50 to-slate-100 text-indigo-400">
-                                    <ShoppingBag className="h-8 w-8 opacity-60" />
+                                  <div className="flex h-32 w-full items-center justify-center bg-stone-100/80 border-b border-stone-200/60 text-stone-400">
+                                    <ShoppingBag
+                                      className="h-8 w-8 opacity-70"
+                                      strokeWidth={1.75}
+                                    />
                                   </div>
                                 )}
 
                                 {promo.es_flash && vigente && (
-                                  <span className="absolute top-2.5 left-2.5 inline-flex items-center gap-1 rounded-full bg-amber-500 px-2.5 py-0.5 text-[10px] font-extrabold text-white shadow-xs">
-                                    <Zap className="h-3 w-3 fill-white" />
+                                  <span className="absolute top-2.5 left-2.5 inline-flex items-center gap-1 rounded-full bg-amber-600 px-2.5 py-0.5 text-[10px] font-bold text-white shadow-xs">
+                                    <Zap
+                                      className="h-3 w-3"
+                                      strokeWidth={1.75}
+                                    />
                                     FLASH
                                   </span>
                                 )}
@@ -1099,68 +1150,102 @@ export default function App() {
                                     )
                                   }
                                   title="Quitar de guardados"
-                                  className="absolute top-2.5 right-2.5 flex h-8 w-8 items-center justify-center rounded-full border border-rose-200 bg-rose-50/95 text-rose-500 shadow-xs hover:bg-rose-100 transition cursor-pointer"
+                                  className="absolute top-2.5 right-2.5 flex h-8 w-8 items-center justify-center rounded-full border border-rose-200 bg-rose-50/95 text-rose-500 shadow-xs hover:bg-rose-100 transition-all duration-200 cursor-pointer"
                                 >
-                                  <Heart className="h-4 w-4 fill-rose-500 text-rose-500" />
+                                  <Heart
+                                    className="h-4 w-4 fill-rose-500 text-rose-500"
+                                    strokeWidth={1.75}
+                                  />
                                 </button>
                               </div>
 
                               <div className="p-4 space-y-2">
                                 <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-                                  <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2.5 py-0.5 font-medium text-indigo-700 capitalize">
-                                    <Tag className="h-3 w-3" />
+                                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200/60 px-2.5 py-0.5 font-medium text-emerald-700 capitalize">
+                                    <Tag
+                                      className="h-3 w-3"
+                                      strokeWidth={1.75}
+                                    />
                                     {comercio?.rubro?.replace('_', ' ') ||
                                       'Comercio'}
                                   </span>
 
                                   {vigente ? (
-                                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-0.5 font-semibold text-amber-700">
-                                      <Clock className="h-3 w-3" />
+                                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 border border-amber-200/60 px-2.5 py-0.5 font-semibold text-amber-800 tabular-nums">
+                                      <Clock
+                                        className="h-3 w-3"
+                                        strokeWidth={1.75}
+                                      />
                                       {remaining}
                                     </span>
                                   ) : (
-                                    <span className="inline-flex items-center rounded-full bg-slate-200 px-2.5 py-0.5 font-bold text-slate-600">
+                                    <span className="inline-flex items-center rounded-full bg-stone-200 px-2.5 py-0.5 font-bold text-stone-600">
                                       Oferta finalizada
                                     </span>
                                   )}
                                 </div>
 
-                                <h4 className="text-sm font-bold text-slate-900 line-clamp-2">
+                                <h4 className="font-display text-sm font-bold text-stone-900 line-clamp-2">
                                   {promo.titulo}
                                 </h4>
 
                                 {promo.descripcion && (
-                                  <p className="text-xs text-slate-500 line-clamp-2">
+                                  <p className="text-xs text-stone-600 line-clamp-2">
                                     {promo.descripcion}
                                   </p>
                                 )}
 
-                                <p className="flex items-center gap-1.5 text-xs text-slate-600">
-                                  <Store className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                                  <span className="font-semibold text-slate-800 truncate">
+                                <p className="flex items-center gap-1.5 text-xs text-stone-600">
+                                  <Store
+                                    className="h-3.5 w-3.5 text-stone-400 shrink-0"
+                                    strokeWidth={1.75}
+                                  />
+                                  <span className="font-semibold text-stone-800 truncate">
                                     {comercio?.nombre || 'Comercio del barrio'}
                                   </span>
                                 </p>
                               </div>
                             </div>
 
-                            <div className="border-t border-slate-100 p-3.5 flex items-center gap-2">
+                            <div className="border-t border-stone-100 p-3.5 flex flex-wrap items-center gap-2">
+                              {vigente && (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setPromoForCanje({
+                                      ...promo,
+                                      comercios: comercio,
+                                    })
+                                  }
+                                  className="font-display flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-700 transition-all duration-200 cursor-pointer"
+                                >
+                                  <Ticket
+                                    className="h-3.5 w-3.5"
+                                    strokeWidth={1.75}
+                                  />
+                                  Canjear en local
+                                </button>
+                              )}
+
                               {vigente && waUrl ? (
                                 <a
                                   href={waUrl}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-700 transition"
+                                  className="flex-1 flex items-center justify-center gap-1.5 rounded-xl border border-stone-200/90 bg-white px-3 py-2 text-xs font-semibold text-stone-700 hover:border-stone-300 hover:bg-stone-50 transition-all duration-200"
                                 >
-                                  <MessageCircle className="h-3.5 w-3.5" />
-                                  Pedir por WhatsApp
+                                  <MessageCircle
+                                    className="h-3.5 w-3.5 text-emerald-600"
+                                    strokeWidth={1.75}
+                                  />
+                                  WhatsApp
                                 </a>
                               ) : (
-                                <span className="flex-1 text-center text-xs font-medium text-slate-400 py-1.5">
-                                  {vigente
-                                    ? 'Sin WhatsApp disponible'
-                                    : 'Esta promoción ya finalizó'}
-                                </span>
+                                !vigente && (
+                                  <span className="flex-1 text-center text-xs font-medium text-stone-400 py-1.5">
+                                    Esta promoción ya finalizó
+                                  </span>
+                                )
                               )}
 
                               <button
@@ -1171,7 +1256,7 @@ export default function App() {
                                     promo.titulo
                                   )
                                 }
-                                className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50 hover:text-rose-600 transition cursor-pointer"
+                                className="rounded-xl border border-stone-200/90 bg-white px-3 py-2 text-xs font-medium text-stone-600 hover:border-stone-300 hover:text-rose-600 transition-all duration-200 cursor-pointer"
                               >
                                 Quitar
                               </button>
@@ -1190,14 +1275,17 @@ export default function App() {
         {/* PESTAÑA 3: MIS COMERCIOS (Solo autenticado) */}
         {activeTab === 'comercios' && session && (
           <div className="space-y-6">
-            <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
+            <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-stone-200/80 bg-white p-6 shadow-sm">
               <div>
-                <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-                  <Store className="h-5 w-5 text-indigo-600" />
+                <h2 className="font-display text-xl font-bold text-stone-900 flex items-center gap-2">
+                  <Store
+                    className="h-5 w-5 text-emerald-600"
+                    strokeWidth={1.75}
+                  />
                   Mis Comercios y Sucursales
                 </h2>
-                <p className="text-sm text-slate-500 mt-0.5">
-                  Administra tus locales, tus promociones activas y republica ofertas desde tu historial.
+                <p className="text-sm text-stone-600 mt-0.5">
+                  Administra tus locales, valida PINs en mostrador y consulta las métricas de conversión.
                 </p>
               </div>
 
@@ -1206,51 +1294,54 @@ export default function App() {
                   <button
                     type="button"
                     onClick={() => handleOpenNewPromo(comercios[0].id)}
-                    className="inline-flex items-center gap-1.5 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-2.5 text-xs sm:text-sm font-semibold text-indigo-700 hover:bg-indigo-100 transition cursor-pointer"
+                    className="font-display inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs sm:text-sm font-bold text-white shadow-sm hover:bg-emerald-700 transition-all duration-200 cursor-pointer"
                   >
-                    <Sparkles className="h-4 w-4" />
-                    + Nueva Promo
+                    <Sparkles className="h-4 w-4" strokeWidth={1.75} />
+                    Nueva Promo
                   </button>
                 )}
 
                 <button
                   type="button"
                   onClick={() => setIsRegisterBusinessOpen(true)}
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2.5 text-xs sm:text-sm font-semibold text-white shadow-xs hover:bg-indigo-700 transition cursor-pointer"
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-stone-200/90 bg-white px-4 py-2.5 text-xs sm:text-sm font-semibold text-stone-700 shadow-xs hover:border-stone-300 hover:bg-stone-50 transition-all duration-200 cursor-pointer"
                 >
-                  <Plus className="h-4 w-4" />
-                  + Agregar otro local
+                  <Plus className="h-4 w-4" strokeWidth={1.75} />
+                  Agregar otro local
                 </button>
               </div>
             </div>
 
             {loadingComercios ? (
-              <div className="flex items-center justify-center rounded-2xl border border-slate-200 bg-white p-12 text-slate-500 gap-2">
-                <Loader2 className="h-5 w-5 animate-spin text-indigo-600" />
+              <div className="flex items-center justify-center rounded-2xl border border-stone-200/80 bg-white p-12 text-stone-600 gap-2">
+                <Loader2
+                  className="h-5 w-5 animate-spin text-emerald-600"
+                  strokeWidth={1.75}
+                />
                 <span className="text-sm font-medium">
                   Cargando tus comercios y promociones...
                 </span>
               </div>
             ) : comercios.length === 0 ? (
-              <div className="rounded-2xl border-2 border-dashed border-slate-300 bg-white p-12 text-center space-y-4">
-                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600">
-                  <Store className="h-7 w-7" />
+              <div className="rounded-2xl border border-dashed border-stone-300 bg-white p-12 text-center space-y-4 shadow-sm">
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700 border border-emerald-200/60">
+                  <Store className="h-7 w-7" strokeWidth={1.75} />
                 </div>
                 <div className="max-w-md mx-auto">
-                  <h3 className="text-lg font-bold text-slate-900">
+                  <h3 className="font-display text-lg font-bold text-stone-900">
                     Aún no tienes locales vinculados
                   </h3>
-                  <p className="mt-1 text-sm text-slate-500">
+                  <p className="mt-1 text-sm text-stone-600">
                     Registra tu primer comercio o sucursal en el mapa para comenzar a publicar promociones para tus vecinos.
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setIsRegisterBusinessOpen(true)}
-                  className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 transition cursor-pointer"
+                  className="font-display inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-bold text-white shadow-sm hover:bg-emerald-700 transition-all duration-200 cursor-pointer"
                 >
-                  <Plus className="h-4 w-4" />
-                  + Registrar mi primer local
+                  <Plus className="h-4 w-4" strokeWidth={1.75} />
+                  Registrar mi primer local
                 </button>
               </div>
             ) : (
@@ -1269,17 +1360,17 @@ export default function App() {
                   return (
                     <div
                       key={loc.id}
-                      className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xs transition"
+                      className="overflow-hidden rounded-2xl border border-stone-200/80 bg-white shadow-sm hover:border-stone-300 transition-all duration-200"
                     >
                       <div className="p-6 flex flex-wrap items-start justify-between gap-4">
                         <div className="space-y-2">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700 capitalize">
-                              <Tag className="h-3 w-3" />
+                          <div className="flex flex-wrap items-center gap-2 tabular-nums">
+                            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200/60 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 capitalize">
+                              <Tag className="h-3 w-3" strokeWidth={1.75} />
                               {loc.rubro?.replace('_', ' ') || 'Comercio'}
                             </span>
 
-                            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+                            <span className="inline-flex items-center gap-1 rounded-full bg-stone-100 px-2.5 py-0.5 text-xs font-semibold text-stone-700">
                               {promosActivas.length}{' '}
                               {promosActivas.length === 1
                                 ? 'activa'
@@ -1287,26 +1378,35 @@ export default function App() {
                             </span>
 
                             {promosVencidas.length > 0 && (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">
-                                <History className="h-3 w-3" />
+                              <span className="inline-flex items-center gap-1 rounded-full bg-stone-100 px-2.5 py-0.5 text-xs font-medium text-stone-600">
+                                <History
+                                  className="h-3 w-3"
+                                  strokeWidth={1.75}
+                                />
                                 {promosVencidas.length} en historial
                               </span>
                             )}
                           </div>
 
-                          <h3 className="text-lg font-bold text-slate-900">
+                          <h3 className="font-display text-lg font-bold text-stone-900">
                             {loc.nombre}
                           </h3>
 
-                          <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500">
+                          <div className="flex flex-wrap items-center gap-4 text-xs text-stone-600 tabular-nums">
                             <span className="inline-flex items-center gap-1">
-                              <MapPin className="h-3.5 w-3.5 text-slate-400" />
+                              <MapPin
+                                className="h-3.5 w-3.5 text-stone-400"
+                                strokeWidth={1.75}
+                              />
                               {formatUbicacionDisplay(loc)}
                             </span>
 
                             {loc.telefono_whatsapp && (
                               <span className="inline-flex items-center gap-1">
-                                <Phone className="h-3.5 w-3.5 text-slate-400" />
+                                <Phone
+                                  className="h-3.5 w-3.5 text-stone-400"
+                                  strokeWidth={1.75}
+                                />
                                 +{loc.telefono_whatsapp}
                               </span>
                             )}
@@ -1316,45 +1416,73 @@ export default function App() {
                         <div className="flex flex-wrap items-center gap-2.5">
                           <button
                             type="button"
+                            onClick={() => {
+                              setExpandedComercios((prev) => ({
+                                ...prev,
+                                [loc.id]: true,
+                              }));
+                              selectSubTabForComercio(loc.id, 'metricas');
+                              fetchPromosForComercio(loc.id);
+                            }}
+                            className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-200/80 bg-emerald-50/70 px-3.5 py-2 text-xs font-semibold text-emerald-800 hover:bg-emerald-100/80 transition-all duration-200 cursor-pointer"
+                          >
+                            <BarChart3
+                              className="h-4 w-4 text-emerald-700"
+                              strokeWidth={1.75}
+                            />
+                            Validar PIN / Métricas BI
+                          </button>
+
+                          <button
+                            type="button"
                             onClick={() => toggleComercioPromos(loc.id)}
-                            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition cursor-pointer"
+                            className="inline-flex items-center gap-1.5 rounded-xl border border-stone-200/90 bg-white px-3.5 py-2 text-xs font-semibold text-stone-700 hover:border-stone-300 hover:bg-stone-50 transition-all duration-200 cursor-pointer tabular-nums"
                           >
                             {isExpanded ? (
-                              <ChevronUp className="h-4 w-4" />
+                              <ChevronUp
+                                className="h-4 w-4"
+                                strokeWidth={1.75}
+                              />
                             ) : (
-                              <ChevronDown className="h-4 w-4" />
+                              <ChevronDown
+                                className="h-4 w-4"
+                                strokeWidth={1.75}
+                              />
                             )}
-                            Ver promociones asociadas ({todasLasPromos.length})
+                            Promociones ({todasLasPromos.length})
                           </button>
 
                           <button
                             type="button"
                             onClick={() => handleOpenNewPromo(loc.id)}
-                            className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-3.5 py-2 text-xs font-semibold text-white shadow-xs hover:bg-indigo-700 transition cursor-pointer"
+                            className="font-display inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-bold text-white shadow-xs hover:bg-emerald-700 transition-all duration-200 cursor-pointer"
                           >
-                            <Plus className="h-4 w-4" />
-                            + Nueva Promo
+                            <Plus className="h-4 w-4" strokeWidth={1.75} />
+                            Nueva Promo
                           </button>
                         </div>
                       </div>
 
-                      {/* Vista de detalle con pestañas internas: Promociones Activas e Historial / Vencidas */}
+                      {/* Vista de detalle con pestañas internas */}
                       {isExpanded && (
-                        <div className="border-t border-slate-100 bg-slate-50/70 px-6 py-4 space-y-4">
-                          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/80 pb-2.5">
-                            <div className="flex items-center gap-2">
+                        <div className="border-t border-stone-200/80 bg-[#FAFAF9] px-6 py-4 space-y-4">
+                          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-stone-200/80 pb-2.5">
+                            <div className="flex flex-wrap items-center gap-2 tabular-nums">
                               <button
                                 type="button"
                                 onClick={() =>
                                   selectSubTabForComercio(loc.id, 'activas')
                                 }
-                                className={`inline-flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-xs font-bold transition cursor-pointer ${
+                                className={`font-display inline-flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-xs font-bold transition-all duration-200 cursor-pointer ${
                                   currentSubTab === 'activas'
-                                    ? 'bg-indigo-600 text-white shadow-2xs'
-                                    : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
+                                    ? 'bg-emerald-600 text-white shadow-xs'
+                                    : 'bg-white text-stone-600 border border-stone-200/80 hover:border-stone-300 hover:text-stone-900'
                                 }`}
                               >
-                                <Sparkles className="h-3.5 w-3.5" />
+                                <Sparkles
+                                  className="h-3.5 w-3.5"
+                                  strokeWidth={1.75}
+                                />
                                 Promociones Activas ({promosActivas.length})
                               </button>
 
@@ -1363,20 +1491,44 @@ export default function App() {
                                 onClick={() =>
                                   selectSubTabForComercio(loc.id, 'vencidas')
                                 }
-                                className={`inline-flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-xs font-bold transition cursor-pointer ${
+                                className={`font-display inline-flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-xs font-bold transition-all duration-200 cursor-pointer ${
                                   currentSubTab === 'vencidas'
-                                    ? 'bg-slate-800 text-white shadow-2xs'
-                                    : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
+                                    ? 'bg-stone-800 text-white shadow-xs'
+                                    : 'bg-white text-stone-600 border border-stone-200/80 hover:border-stone-300 hover:text-stone-900'
                                 }`}
                               >
-                                <History className="h-3.5 w-3.5" />
+                                <History
+                                  className="h-3.5 w-3.5"
+                                  strokeWidth={1.75}
+                                />
                                 Historial / Vencidas ({promosVencidas.length})
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  selectSubTabForComercio(loc.id, 'metricas')
+                                }
+                                className={`font-display inline-flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-xs font-bold transition-all duration-200 cursor-pointer ${
+                                  currentSubTab === 'metricas'
+                                    ? 'bg-emerald-600 text-white shadow-xs'
+                                    : 'bg-white text-stone-600 border border-stone-200/80 hover:border-stone-300 hover:text-stone-900'
+                                }`}
+                              >
+                                <BarChart3
+                                  className="h-3.5 w-3.5"
+                                  strokeWidth={1.75}
+                                />
+                                Canjes PIN y Métricas BI
                               </button>
                             </div>
 
                             {loadingComercioPromosId === loc.id && (
-                              <span className="inline-flex items-center gap-1 text-xs text-slate-500">
-                                <Loader2 className="h-3.5 w-3.5 animate-spin text-indigo-600" />
+                              <span className="inline-flex items-center gap-1 text-xs text-stone-500">
+                                <Loader2
+                                  className="h-3.5 w-3.5 animate-spin text-emerald-600"
+                                  strokeWidth={1.75}
+                                />
                                 Sincronizando...
                               </span>
                             )}
@@ -1386,12 +1538,12 @@ export default function App() {
                           {currentSubTab === 'activas' && (
                             <>
                               {promosActivas.length === 0 ? (
-                                <div className="rounded-xl border border-dashed border-slate-200 bg-white p-5 text-center text-xs text-slate-500">
+                                <div className="rounded-xl border border-dashed border-stone-300 bg-white p-5 text-center text-xs text-stone-600">
                                   Esta sucursal no tiene promociones activas en este momento.{' '}
                                   <button
                                     type="button"
                                     onClick={() => handleOpenNewPromo(loc.id)}
-                                    className="font-semibold text-indigo-600 hover:underline cursor-pointer"
+                                    className="font-semibold text-emerald-700 hover:underline cursor-pointer"
                                   >
                                     Publicar una nueva oferta
                                   </button>
@@ -1407,7 +1559,7 @@ export default function App() {
                                             'vencidas'
                                           )
                                         }
-                                        className="font-semibold text-slate-700 underline cursor-pointer"
+                                        className="font-semibold text-stone-800 underline cursor-pointer"
                                       >
                                         republicar desde el historial ({promosVencidas.length})
                                       </button>
@@ -1419,42 +1571,52 @@ export default function App() {
                                   {promosActivas.map((promo) => (
                                     <div
                                       key={promo.id}
-                                      className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-3.5 shadow-2xs"
+                                      className="flex items-center justify-between gap-3 rounded-xl border border-stone-200/80 bg-white p-3.5 shadow-xs"
                                     >
                                       <div className="flex items-center gap-3 min-w-0">
                                         {promo.imagen_url ? (
                                           <img
                                             src={promo.imagen_url}
                                             alt={promo.titulo}
-                                            className="h-12 w-12 rounded-lg object-cover border border-slate-200 shrink-0"
+                                            className="h-12 w-12 rounded-lg object-cover border border-stone-200/80 shrink-0"
                                           />
                                         ) : (
-                                          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-indigo-50 text-indigo-500 shrink-0">
-                                            <Sparkles className="h-5 w-5" />
+                                          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200/60 shrink-0">
+                                            <Sparkles
+                                              className="h-5 w-5"
+                                              strokeWidth={1.75}
+                                            />
                                           </div>
                                         )}
 
                                         <div className="min-w-0">
                                           <div className="flex items-center gap-1.5">
-                                            <span className="inline-block rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
+                                            <span className="inline-block rounded-full bg-emerald-50 border border-emerald-200/60 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
                                               Activa
                                             </span>
                                             {promo.es_flash && (
-                                              <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800">
-                                                ⚡ Flash
+                                              <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 border border-amber-200/60 px-2 py-0.5 text-[10px] font-bold text-amber-800">
+                                                <Zap
+                                                  className="h-3 w-3"
+                                                  strokeWidth={1.75}
+                                                />
+                                                Flash
                                               </span>
                                             )}
                                           </div>
-                                          <p className="text-sm font-bold text-slate-900 truncate mt-0.5">
+                                          <p className="font-display text-sm font-bold text-stone-900 truncate mt-0.5">
                                             {promo.titulo}
                                           </p>
                                           {promo.descripcion && (
-                                            <p className="text-xs text-slate-500 truncate">
+                                            <p className="text-xs text-stone-600 truncate">
                                               {promo.descripcion}
                                             </p>
                                           )}
-                                          <p className="text-[11px] text-amber-700 font-medium flex items-center gap-1 mt-0.5">
-                                            <Clock className="h-3 w-3" />
+                                          <p className="text-[11px] text-amber-800 font-medium flex items-center gap-1 mt-0.5 tabular-nums">
+                                            <Clock
+                                              className="h-3 w-3"
+                                              strokeWidth={1.75}
+                                            />
                                             Vence:{' '}
                                             {new Date(
                                               promo.vence_el
@@ -1473,12 +1635,18 @@ export default function App() {
                                         disabled={archivingPromoId === promo.id}
                                         onClick={() => handleArchivePromo(promo)}
                                         title="Pausar y archivar en el historial"
-                                        className="inline-flex items-center gap-1 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-xs font-semibold text-amber-800 hover:bg-amber-100 disabled:opacity-50 transition shrink-0 cursor-pointer"
+                                        className="inline-flex items-center gap-1.5 rounded-lg border border-stone-200/90 bg-white px-2.5 py-1.5 text-xs font-semibold text-stone-700 hover:border-amber-300 hover:bg-amber-50 hover:text-amber-900 disabled:opacity-50 transition-all duration-200 shrink-0 cursor-pointer"
                                       >
                                         {archivingPromoId === promo.id ? (
-                                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                          <Loader2
+                                            className="h-3.5 w-3.5 animate-spin"
+                                            strokeWidth={1.75}
+                                          />
                                         ) : (
-                                          <Archive className="h-3.5 w-3.5" />
+                                          <Archive
+                                            className="h-3.5 w-3.5"
+                                            strokeWidth={1.75}
+                                          />
                                         )}
                                         Dar de baja
                                       </button>
@@ -1493,7 +1661,7 @@ export default function App() {
                           {currentSubTab === 'vencidas' && (
                             <>
                               {promosVencidas.length === 0 ? (
-                                <div className="rounded-xl border border-dashed border-slate-200 bg-white p-5 text-center text-xs text-slate-500">
+                                <div className="rounded-xl border border-dashed border-stone-300 bg-white p-5 text-center text-xs text-stone-600">
                                   No hay promociones vencidas en el historial de esta sucursal.
                                 </div>
                               ) : (
@@ -1501,27 +1669,30 @@ export default function App() {
                                   {promosVencidas.map((promo) => (
                                     <div
                                       key={promo.id}
-                                      className="flex flex-col justify-between gap-3 rounded-xl border border-slate-200 bg-slate-100/80 p-3.5 opacity-85 hover:opacity-100 transition"
+                                      className="flex flex-col justify-between gap-3 rounded-xl border border-stone-200/80 bg-white/80 p-3.5 opacity-85 hover:opacity-100 transition-all duration-200"
                                     >
                                       <div className="flex items-start gap-3 min-w-0">
                                         {promo.imagen_url ? (
                                           <img
                                             src={promo.imagen_url}
                                             alt={promo.titulo}
-                                            className="h-12 w-12 rounded-lg object-cover grayscale border border-slate-200 shrink-0"
+                                            className="h-12 w-12 rounded-lg object-cover grayscale border border-stone-200/80 shrink-0"
                                           />
                                         ) : (
-                                          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-slate-200 text-slate-500 shrink-0">
-                                            <History className="h-5 w-5" />
+                                          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-stone-100 text-stone-500 border border-stone-200/60 shrink-0">
+                                            <History
+                                              className="h-5 w-5"
+                                              strokeWidth={1.75}
+                                            />
                                           </div>
                                         )}
 
                                         <div className="min-w-0 flex-1">
-                                          <div className="flex items-center justify-between gap-2">
-                                            <span className="inline-flex items-center rounded-full bg-slate-200 px-2 py-0.5 text-[10px] font-bold text-slate-600">
+                                          <div className="flex items-center justify-between gap-2 tabular-nums">
+                                            <span className="inline-flex items-center rounded-full bg-stone-200/80 px-2 py-0.5 text-[10px] font-bold text-stone-700">
                                               Finalizada
                                             </span>
-                                            <span className="text-[11px] text-slate-500">
+                                            <span className="text-[11px] text-stone-500">
                                               Venció:{' '}
                                               {new Date(
                                                 promo.vence_el
@@ -1533,26 +1704,29 @@ export default function App() {
                                             </span>
                                           </div>
 
-                                          <p className="text-sm font-bold text-slate-700 truncate mt-1">
+                                          <p className="font-display text-sm font-bold text-stone-800 truncate mt-1">
                                             {promo.titulo}
                                           </p>
                                           {promo.descripcion && (
-                                            <p className="text-xs text-slate-500 line-clamp-1">
+                                            <p className="text-xs text-stone-500 line-clamp-1">
                                               {promo.descripcion}
                                             </p>
                                           )}
                                         </div>
                                       </div>
 
-                                      <div className="flex items-center justify-end gap-2 border-t border-slate-200/70 pt-2.5">
+                                      <div className="flex items-center justify-end gap-2 border-t border-stone-200/70 pt-2.5">
                                         <button
                                           type="button"
                                           onClick={() =>
                                             setPromoToRepublish(promo)
                                           }
-                                          className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white shadow-2xs hover:bg-indigo-700 transition cursor-pointer"
+                                          className="font-display inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white shadow-2xs hover:bg-emerald-700 transition-all duration-200 cursor-pointer"
                                         >
-                                          <RotateCcw className="h-3.5 w-3.5" />
+                                          <RotateCcw
+                                            className="h-3.5 w-3.5"
+                                            strokeWidth={1.75}
+                                          />
                                           Republicar Promo
                                         </button>
 
@@ -1560,9 +1734,12 @@ export default function App() {
                                           type="button"
                                           disabled={deletingPromoId === promo.id}
                                           onClick={() => setPromoToDelete(promo)}
-                                          className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 disabled:opacity-50 transition cursor-pointer"
+                                          className="inline-flex items-center gap-1 rounded-lg border border-stone-200/90 bg-white px-2.5 py-1.5 text-xs font-semibold text-stone-600 hover:border-red-200 hover:bg-red-50 hover:text-red-700 disabled:opacity-50 transition-all duration-200 cursor-pointer"
                                         >
-                                          <Trash2 className="h-3.5 w-3.5" />
+                                          <Trash2
+                                            className="h-3.5 w-3.5"
+                                            strokeWidth={1.75}
+                                          />
                                           Eliminar
                                         </button>
                                       </div>
@@ -1571,6 +1748,19 @@ export default function App() {
                                 </div>
                               )}
                             </>
+                          )}
+
+                          {/* SUB-PESTAÑA 3: PANEL DE CANJES Y MÉTRICAS BI */}
+                          {currentSubTab === 'metricas' && (
+                            <PanelCanjesYMetricas
+                              comercioId={loc.id}
+                              comercioNombre={loc.nombre}
+                              promociones={todasLasPromos}
+                              onPromoUpdated={(id) => {
+                                fetchPromosForComercio(id);
+                                setRefreshKey((prev) => prev + 1);
+                              }}
+                            />
                           )}
                         </div>
                       )}
@@ -1583,10 +1773,23 @@ export default function App() {
         )}
       </main>
 
+      {/* Modal de Canje Temporal (PIN de 5 minutos para el vecino) */}
+      <ModalCanjeTemporal
+        key={
+          promoForCanje?.id ||
+          promoForCanje?.promo_id ||
+          promoForCanje?.promocion_id ||
+          'canje-modal'
+        }
+        isOpen={Boolean(promoForCanje)}
+        promo={promoForCanje}
+        onClose={() => setPromoForCanje(null)}
+      />
+
       {/* Modal accesible para publicar nueva promoción */}
       {isPromoModalOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs overflow-y-auto"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/50 p-4 backdrop-blur-xs overflow-y-auto"
           role="dialog"
           aria-modal="true"
         >
@@ -1614,21 +1817,21 @@ export default function App() {
       {/* Modal de confirmación peligrosa para Eliminar Definitivamente */}
       {promoToDelete && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/50 p-4 backdrop-blur-xs"
           role="dialog"
           aria-modal="true"
         >
-          <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-xl space-y-4">
+          <div className="w-full max-w-md rounded-2xl border border-stone-200/80 bg-white p-6 shadow-sm space-y-4">
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-red-600 shrink-0">
-                  <Trash2 className="h-5 w-5" />
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-red-600 border border-red-200/60 shrink-0">
+                  <Trash2 className="h-5 w-5" strokeWidth={1.75} />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-slate-900">
+                  <h3 className="font-display text-base font-bold text-stone-900">
                     Eliminar definitivamente
                   </h3>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-stone-600">
                     Esta acción borrará por completo el registro del historial
                   </p>
                 </div>
@@ -1636,25 +1839,25 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => setPromoToDelete(null)}
-                className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 cursor-pointer"
+                className="rounded-lg p-1 text-stone-400 hover:bg-stone-100 hover:text-stone-700 cursor-pointer"
               >
-                <X className="h-5 w-5" />
+                <X className="h-5 w-5" strokeWidth={1.75} />
               </button>
             </div>
 
-            <p className="text-sm text-slate-600">
+            <p className="text-sm text-stone-600">
               ¿Estás seguro de que deseas eliminar definitivamente la promoción{' '}
-              <strong className="text-slate-900">
+              <strong className="text-stone-900">
                 &ldquo;{promoToDelete.titulo}&rdquo;
               </strong>
               ?
             </p>
 
-            <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-100">
+            <div className="flex items-center justify-end gap-3 pt-2 border-t border-stone-200/80">
               <button
                 type="button"
                 onClick={() => setPromoToDelete(null)}
-                className="rounded-xl border border-slate-200 px-4 py-2 text-xs sm:text-sm font-medium text-slate-600 hover:bg-slate-50 cursor-pointer"
+                className="rounded-xl border border-stone-200/90 bg-white px-4 py-2 text-xs sm:text-sm font-medium text-stone-600 hover:bg-stone-50 cursor-pointer"
               >
                 Cancelar
               </button>
@@ -1662,16 +1865,19 @@ export default function App() {
                 type="button"
                 disabled={deletingPromoId === promoToDelete.id}
                 onClick={confirmDeletePromo}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-red-600 px-4 py-2 text-xs sm:text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50 cursor-pointer"
+                className="font-display inline-flex items-center gap-1.5 rounded-xl bg-red-600 px-4 py-2 text-xs sm:text-sm font-bold text-white hover:bg-red-700 disabled:opacity-50 cursor-pointer"
               >
                 {deletingPromoId === promoToDelete.id ? (
                   <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <Loader2
+                      className="h-4 w-4 animate-spin"
+                      strokeWidth={1.75}
+                    />
                     Eliminando...
                   </>
                 ) : (
                   <>
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 className="h-4 w-4" strokeWidth={1.75} />
                     Sí, eliminar definitivamente
                   </>
                 )}
@@ -1695,9 +1901,9 @@ export default function App() {
         onBusinessRegistered={handleBusinessRegistered}
       />
 
-      <footer className="border-t border-slate-200 bg-white py-5 text-center text-xs text-slate-500">
+      <footer className="border-t border-stone-200/80 bg-white py-5 text-center text-xs text-stone-500">
         <div className="mx-auto max-w-7xl px-4">
-          OfertAr · TesProm &copy; {new Date().getFullYear()} — Impulsando el comercio barrial.
+          OfertAr &copy; {new Date().getFullYear()} — Plataforma de promociones barriales.
         </div>
       </footer>
     </div>

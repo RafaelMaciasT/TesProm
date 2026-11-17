@@ -1,5 +1,13 @@
 import { useState } from 'react';
-import { X, Mail, Lock, Loader2, AlertCircle, CheckCircle2, UserCheck } from 'lucide-react';
+import {
+  X,
+  Mail,
+  Lock,
+  Loader2,
+  AlertCircle,
+  CheckCircle2,
+  UserCheck,
+} from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
@@ -37,7 +45,9 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
     }
 
     if (!isSupabaseConfigured || !supabase) {
-      setErrorMsg('Supabase no está configurado. Revisa las variables de entorno en .env.');
+      setErrorMsg(
+        'Supabase no está configurado. Revisa las variables de entorno en .env.'
+      );
       return;
     }
 
@@ -67,31 +77,33 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
           onClose();
         } else {
           setInfoMsg(
-            '¡Cuenta creada! Si tienes activada la confirmación por correo, revisa tu bandeja de entrada para iniciar sesión.'
+            'Cuenta creada. Si tienes activada la confirmación por correo, revisa tu bandeja de entrada para iniciar sesión.'
           );
           setMode('login');
         }
       }
     } catch (err) {
-      setErrorMsg(err.message || 'Ocurrió un error al procesar la autenticación.');
+      setErrorMsg(
+        err.message || 'Ocurrió un error al procesar la autenticación.'
+      );
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs">
-      <div className="relative w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-xl border border-slate-200">
-        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
-              <UserCheck className="h-5 w-5" />
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/50 p-4 backdrop-blur-xs">
+      <div className="relative w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-sm border border-stone-200/80">
+        <div className="flex items-center justify-between border-b border-stone-200/80 px-6 py-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200/60">
+              <UserCheck className="h-5 w-5" strokeWidth={1.75} />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-slate-900">
-                {mode === 'login' ? 'Ingresar a TesProm' : 'Crear Cuenta en TesProm'}
+              <h2 className="font-display text-lg font-bold text-stone-900">
+                {mode === 'login' ? 'Ingresar a OfertAr' : 'Crear Cuenta en OfertAr'}
               </h2>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-stone-600">
                 Cuenta única para vecinos y comercios del barrio
               </p>
             </div>
@@ -99,22 +111,22 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition cursor-pointer"
+            className="rounded-lg p-1.5 text-stone-400 hover:bg-stone-100 hover:text-stone-700 transition-all duration-200 cursor-pointer"
             aria-label="Cerrar"
           >
-            <X className="h-5 w-5" />
+            <X className="h-5 w-5" strokeWidth={1.75} />
           </button>
         </div>
 
         <div className="px-6 pt-4">
-          <div className="grid grid-cols-2 rounded-xl bg-slate-100 p-1 text-xs font-semibold">
+          <div className="grid grid-cols-2 rounded-xl bg-stone-100 p-1 text-xs font-semibold">
             <button
               type="button"
               onClick={() => toggleMode('login')}
-              className={`rounded-lg py-2 transition cursor-pointer ${
+              className={`rounded-lg py-2 transition-all duration-200 cursor-pointer ${
                 mode === 'login'
-                  ? 'bg-white text-slate-900 shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
+                  ? 'bg-white text-stone-900 shadow-xs border border-stone-200/60'
+                  : 'text-stone-600 hover:text-stone-900'
               }`}
             >
               Iniciar Sesión
@@ -122,10 +134,10 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
             <button
               type="button"
               onClick={() => toggleMode('register')}
-              className={`rounded-lg py-2 transition cursor-pointer ${
+              className={`rounded-lg py-2 transition-all duration-200 cursor-pointer ${
                 mode === 'register'
-                  ? 'bg-white text-slate-900 shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
+                  ? 'bg-white text-stone-900 shadow-xs border border-stone-200/60'
+                  : 'text-stone-600 hover:text-stone-900'
               }`}
             >
               Registrarse
@@ -135,42 +147,54 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {errorMsg && (
-            <div className="flex items-start gap-2.5 rounded-xl bg-red-50 border border-red-200 p-3.5 text-xs text-red-700">
-              <AlertCircle className="h-4 w-4 text-red-600 shrink-0 mt-0.5" />
+            <div className="flex items-start gap-2.5 rounded-xl bg-red-50 border border-red-200/80 p-3.5 text-xs text-red-700">
+              <AlertCircle
+                className="h-4 w-4 text-red-600 shrink-0 mt-0.5"
+                strokeWidth={1.75}
+              />
               <span>{errorMsg}</span>
             </div>
           )}
 
           {infoMsg && (
-            <div className="flex items-start gap-2.5 rounded-xl bg-emerald-50 border border-emerald-200 p-3.5 text-xs text-emerald-700">
-              <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
+            <div className="flex items-start gap-2.5 rounded-xl bg-emerald-50 border border-emerald-200/60 p-3.5 text-xs text-emerald-800">
+              <CheckCircle2
+                className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5"
+                strokeWidth={1.75}
+              />
               <span>{infoMsg}</span>
             </div>
           )}
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
+            <label className="block text-xs font-semibold text-stone-700 mb-1.5">
               Correo Electrónico
             </label>
             <div className="relative">
-              <Mail className="h-4 w-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <Mail
+                className="h-4 w-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2"
+                strokeWidth={1.75}
+              />
               <input
                 type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="tu@email.com"
-                className="w-full rounded-xl border border-slate-300 pl-9 pr-3 py-2.5 text-sm focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-600/20"
+                className="w-full rounded-xl border border-stone-200/90 bg-white pl-9 pr-3 py-2.5 text-sm text-stone-900 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/15 transition-all duration-200"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
+            <label className="block text-xs font-semibold text-stone-700 mb-1.5">
               Contraseña
             </label>
             <div className="relative">
-              <Lock className="h-4 w-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <Lock
+                className="h-4 w-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2"
+                strokeWidth={1.75}
+              />
               <input
                 type="password"
                 required
@@ -178,7 +202,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Mínimo 6 caracteres"
-                className="w-full rounded-xl border border-slate-300 pl-9 pr-3 py-2.5 text-sm focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-600/20"
+                className="w-full rounded-xl border border-stone-200/90 bg-white pl-9 pr-3 py-2.5 text-sm text-stone-900 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/15 transition-all duration-200"
               />
             </div>
           </div>
@@ -186,11 +210,11 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
           <button
             type="submit"
             disabled={loading}
-            className="w-full flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-xs hover:bg-indigo-700 disabled:opacity-60 transition cursor-pointer"
+            className="font-display w-full flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-emerald-700 disabled:opacity-60 transition-all duration-200 cursor-pointer"
           >
             {loading ? (
               <>
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <Loader2 className="h-4 w-4 animate-spin" strokeWidth={1.75} />
                 Procesando...
               </>
             ) : mode === 'login' ? (

@@ -67,12 +67,16 @@ export default function RegisterBusinessModal({
     }
 
     if (!nombre.trim() || !telefonoWhatsapp.trim()) {
-      setErrorMsg('Por favor completa el nombre del comercio y el WhatsApp de contacto.');
+      setErrorMsg(
+        'Por favor completa el nombre del comercio y el WhatsApp de contacto.'
+      );
       return;
     }
 
     if (!location?.lat || !location?.lng) {
-      setErrorMsg('Por favor selecciona la ubicación del comercio en el mapa.');
+      setErrorMsg(
+        'Por favor selecciona la ubicación del comercio en el mapa.'
+      );
       return;
     }
 
@@ -109,7 +113,7 @@ export default function RegisterBusinessModal({
         throw new Error(`No se pudo registrar el local: ${error.message}`);
       }
 
-      setSuccessMsg('¡Local registrado con éxito!');
+      setSuccessMsg('Local registrado con éxito.');
 
       if (onBusinessRegistered) {
         onBusinessRegistered({
@@ -123,7 +127,9 @@ export default function RegisterBusinessModal({
         handleClose();
       }, 600);
     } catch (err) {
-      setErrorMsg(err.message || 'Ocurrió un error al registrar tu comercio.');
+      setErrorMsg(
+        err.message || 'Ocurrió un error al registrar tu comercio.'
+      );
     } finally {
       setLoading(false);
     }
@@ -131,25 +137,25 @@ export default function RegisterBusinessModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs overflow-y-auto"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/50 p-4 backdrop-blur-xs overflow-y-auto"
       role="dialog"
       aria-modal="true"
       aria-labelledby="modal-register-business-title"
     >
-      <div className="relative my-8 w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-xl border border-slate-200">
-        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
-              <Store className="h-5 w-5" />
+      <div className="relative my-8 w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-sm border border-stone-200/80">
+        <div className="flex items-center justify-between border-b border-stone-200/80 px-6 py-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200/60">
+              <Store className="h-5 w-5" strokeWidth={1.75} />
             </div>
             <div>
               <h2
                 id="modal-register-business-title"
-                className="text-lg font-bold text-slate-900"
+                className="font-display text-lg font-bold text-stone-900"
               >
                 Vincula tu Comercio / Sucursal
               </h2>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-stone-600">
                 Registra un local con su ubicación en el mapa para publicar ofertas
               </p>
             </div>
@@ -158,58 +164,70 @@ export default function RegisterBusinessModal({
           <button
             type="button"
             onClick={handleClose}
-            className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition cursor-pointer"
+            className="rounded-lg p-1.5 text-stone-400 hover:bg-stone-100 hover:text-stone-700 transition-all duration-200 cursor-pointer"
             aria-label="Cerrar"
           >
-            <X className="h-5 w-5" />
+            <X className="h-5 w-5" strokeWidth={1.75} />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {errorMsg && (
-            <div className="flex items-start gap-2.5 rounded-xl bg-red-50 border border-red-200 p-3.5 text-xs text-red-700">
-              <AlertCircle className="h-4 w-4 text-red-600 shrink-0 mt-0.5" />
+            <div className="flex items-start gap-2.5 rounded-xl bg-red-50 border border-red-200/80 p-3.5 text-xs text-red-700">
+              <AlertCircle
+                className="h-4 w-4 text-red-600 shrink-0 mt-0.5"
+                strokeWidth={1.75}
+              />
               <span>{errorMsg}</span>
             </div>
           )}
 
           {successMsg && (
-            <div className="flex items-start gap-2.5 rounded-xl bg-emerald-50 border border-emerald-200 p-3.5 text-xs text-emerald-700">
-              <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
+            <div className="flex items-start gap-2.5 rounded-xl bg-emerald-50 border border-emerald-200/60 p-3.5 text-xs text-emerald-800">
+              <CheckCircle2
+                className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5"
+                strokeWidth={1.75}
+              />
               <span>{successMsg}</span>
             </div>
           )}
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
+              <label className="block text-xs font-semibold text-stone-700 mb-1.5">
                 Nombre del Local *
               </label>
               <div className="relative">
-                <Store className="h-4 w-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <Store
+                  className="h-4 w-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2"
+                  strokeWidth={1.75}
+                />
                 <input
                   type="text"
                   required
                   value={nombre}
                   onChange={(e) => setNombre(e.target.value)}
                   placeholder="Ej. Panadería San José"
-                  className="w-full rounded-xl border border-slate-300 pl-9 pr-3 py-2 text-sm focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-600/20"
+                  className="w-full rounded-xl border border-stone-200/90 bg-white pl-9 pr-3 py-2 text-sm text-stone-900 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/15 transition-all duration-200"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
+              <label className="block text-xs font-semibold text-stone-700 mb-1.5">
                 Dirección / Sucursal
               </label>
               <div className="relative">
-                <MapPin className="h-4 w-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <MapPin
+                  className="h-4 w-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2"
+                  strokeWidth={1.75}
+                />
                 <input
                   type="text"
                   value={direccion}
                   onChange={(e) => setDireccion(e.target.value)}
                   placeholder="Ej. Av. Corrientes 1234"
-                  className="w-full rounded-xl border border-slate-300 pl-9 pr-3 py-2 text-sm focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-600/20"
+                  className="w-full rounded-xl border border-stone-200/90 bg-white pl-9 pr-3 py-2 text-sm text-stone-900 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/15 transition-all duration-200"
                 />
               </div>
             </div>
@@ -217,32 +235,38 @@ export default function RegisterBusinessModal({
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
+              <label className="block text-xs font-semibold text-stone-700 mb-1.5">
                 WhatsApp de Contacto *
               </label>
               <div className="relative">
-                <Phone className="h-4 w-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <Phone
+                  className="h-4 w-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2"
+                  strokeWidth={1.75}
+                />
                 <input
                   type="tel"
                   required
                   value={telefonoWhatsapp}
                   onChange={(e) => setTelefonoWhatsapp(e.target.value)}
                   placeholder="Ej. 5491123456789"
-                  className="w-full rounded-xl border border-slate-300 pl-9 pr-3 py-2 text-sm focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-600/20"
+                  className="w-full rounded-xl border border-stone-200/90 bg-white pl-9 pr-3 py-2 text-sm text-stone-900 tabular-nums focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/15 transition-all duration-200"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
+              <label className="block text-xs font-semibold text-stone-700 mb-1.5">
                 Rubro *
               </label>
               <div className="relative">
-                <Tag className="h-4 w-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <Tag
+                  className="h-4 w-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2"
+                  strokeWidth={1.75}
+                />
                 <select
                   value={rubro}
                   onChange={(e) => setRubro(e.target.value)}
-                  className="w-full rounded-xl border border-slate-300 pl-9 pr-3 py-2 text-sm bg-white focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-600/20"
+                  className="w-full rounded-xl border border-stone-200/90 pl-9 pr-3 py-2 text-sm bg-white text-stone-900 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/15 transition-all duration-200"
                 >
                   {RUBROS.map((cat) => (
                     <option key={cat.value} value={cat.value}>
@@ -255,29 +279,29 @@ export default function RegisterBusinessModal({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2 flex items-center gap-1.5">
-              <MapPin className="h-4 w-4 text-slate-500" />
+            <label className="block text-xs font-semibold text-stone-700 mb-2 flex items-center gap-1.5">
+              <MapPin className="h-4 w-4 text-stone-500" strokeWidth={1.75} />
               Ubicación de la Sucursal en el Mapa *
             </label>
             <LocationPicker position={location} onChange={setLocation} />
           </div>
 
-          <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-100">
+          <div className="flex items-center justify-end gap-3 pt-3 border-t border-stone-200/80">
             <button
               type="button"
               onClick={handleClose}
-              className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 transition cursor-pointer"
+              className="rounded-xl border border-stone-200/90 bg-white px-4 py-2.5 text-sm font-medium text-stone-600 hover:border-stone-300 hover:bg-stone-50 transition-all duration-200 cursor-pointer"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-xs hover:bg-indigo-700 disabled:opacity-60 transition cursor-pointer"
+              className="font-display flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-emerald-700 disabled:opacity-60 transition-all duration-200 cursor-pointer"
             >
               {loading ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <Loader2 className="h-4 w-4 animate-spin" strokeWidth={1.75} />
                   Guardando...
                 </>
               ) : (

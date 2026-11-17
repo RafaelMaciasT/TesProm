@@ -13,10 +13,12 @@ import '../lib/leafletFix';
 
 const DEFAULT_CENTER = [-34.6037, -58.3816]; // Obelisco / CABA
 
-// Icono distintivo para el marcador de los comercios con promociones
+// Marcador vectorial limpio (sin emojis) con estética esmeralda para comercios
 const businessIcon = new L.DivIcon({
   className: 'custom-business-marker',
-  html: `<div style="background-color:#10b981;width:28px;height:28px;border-radius:9999px;border:3px solid #ffffff;box-shadow:0 2px 6px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;color:#ffffff;font-weight:bold;font-size:13px;">★</div>`,
+  html: `<div style="background-color:#059669;width:28px;height:28px;border-radius:9999px;border:2.5px solid #ffffff;box-shadow:0 2px 5px rgba(28,25,23,0.22);display:flex;align-items:center;justify-content:center;color:#ffffff;">
+    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>
+  </div>`,
   iconSize: [28, 28],
   iconAnchor: [14, 14],
   popupAnchor: [0, -14],
@@ -109,7 +111,7 @@ function LocationMarker({ position, onChange, radiusMeters }) {
     <>
       <Marker position={[position.lat, position.lng]}>
         <Popup>
-          <div className="text-xs font-semibold text-slate-800">
+          <div className="text-xs font-semibold text-stone-800">
             Tu posición actual de búsqueda
           </div>
         </Popup>
@@ -119,10 +121,10 @@ function LocationMarker({ position, onChange, radiusMeters }) {
           center={[position.lat, position.lng]}
           radius={radiusMeters}
           pathOptions={{
-            color: '#4f46e5',
-            fillColor: '#6366f1',
-            fillOpacity: 0.14,
-            weight: 2,
+            color: '#059669',
+            fillColor: '#10b981',
+            fillOpacity: 0.12,
+            weight: 1.75,
           }}
         />
       )}
@@ -140,8 +142,8 @@ export default function LocationPicker({
   const center = position ? [position.lat, position.lng] : DEFAULT_CENTER;
 
   return (
-    <div className="space-y-2">
-      <div className="h-72 w-full overflow-hidden rounded-xl border border-slate-200 shadow-inner">
+    <div className="space-y-2.5">
+      <div className="h-72 w-full overflow-hidden rounded-xl border border-stone-200/80 shadow-sm">
         <MapContainer
           center={center}
           zoom={14}
@@ -167,8 +169,7 @@ export default function LocationPicker({
               m.nombre_comercio ||
               m.comercios?.nombre ||
               'Comercio';
-            const dist =
-              m.distancia_metros ?? m.distancia ?? null;
+            const dist = m.distancia_metros ?? m.distancia ?? null;
 
             return (
               <Marker
@@ -178,12 +179,14 @@ export default function LocationPicker({
               >
                 <Popup>
                   <div className="space-y-1 text-xs">
-                    <p className="font-bold text-slate-900">{nombreComercio}</p>
+                    <p className="font-display font-bold text-stone-900">
+                      {nombreComercio}
+                    </p>
                     {m.titulo && (
-                      <p className="text-indigo-700 font-medium">{m.titulo}</p>
+                      <p className="text-stone-700 font-medium">{m.titulo}</p>
                     )}
                     {dist != null && (
-                      <p className="text-emerald-700 font-semibold">
+                      <p className="text-amber-700 font-semibold tabular-nums">
                         A {Math.round(Number(dist))} m
                       </p>
                     )}
@@ -194,10 +197,10 @@ export default function LocationPicker({
           })}
         </MapContainer>
       </div>
-      <div className="flex items-center justify-between text-xs text-slate-500">
+      <div className="flex items-center justify-between text-xs text-stone-600">
         <span>{helperText}</span>
         {position && (
-          <span className="font-mono text-slate-700">
+          <span className="font-mono tabular-nums text-stone-700">
             {position.lat.toFixed(5)}, {position.lng.toFixed(5)}
           </span>
         )}

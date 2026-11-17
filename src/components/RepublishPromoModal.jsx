@@ -194,26 +194,26 @@ export default function RepublishPromoModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs overflow-y-auto"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/50 p-4 backdrop-blur-xs overflow-y-auto"
       role="dialog"
       aria-modal="true"
       aria-labelledby="modal-republish-title"
     >
-      <div className="relative my-8 w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-xl border border-slate-200">
-        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
-              <RotateCcw className="h-5 w-5" />
+      <div className="relative my-8 w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-sm border border-stone-200/80">
+        <div className="flex items-center justify-between border-b border-stone-200/80 px-6 py-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200/60">
+              <RotateCcw className="h-5 w-5" strokeWidth={1.75} />
             </div>
             <div>
               <h2
                 id="modal-republish-title"
-                className="text-lg font-bold text-slate-900"
+                className="font-display text-lg font-bold text-stone-900"
               >
                 Republicar Promoción
               </h2>
-              <p className="text-xs text-slate-500">
-                Elige el tipo de promoción y su nueva vigencia para reactivarla
+              <p className="text-xs text-stone-600">
+                Elige el formato y su nueva vigencia para reactivarla
               </p>
             </div>
           </div>
@@ -221,60 +221,63 @@ export default function RepublishPromoModal({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition cursor-pointer"
+            className="rounded-lg p-1.5 text-stone-400 hover:bg-stone-100 hover:text-stone-700 transition-all duration-200 cursor-pointer"
             aria-label="Cerrar"
           >
-            <X className="h-5 w-5" />
+            <X className="h-5 w-5" strokeWidth={1.75} />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {errorMsg && (
-            <div className="flex items-start gap-2.5 rounded-xl bg-red-50 border border-red-200 p-3.5 text-xs text-red-700">
-              <AlertCircle className="h-4 w-4 text-red-600 shrink-0 mt-0.5" />
+            <div className="flex items-start gap-2.5 rounded-xl bg-red-50 border border-red-200/80 p-3.5 text-xs text-red-700">
+              <AlertCircle
+                className="h-4 w-4 text-red-600 shrink-0 mt-0.5"
+                strokeWidth={1.75}
+              />
               <span>{errorMsg}</span>
             </div>
           )}
 
           {/* Previsualización de datos existentes */}
-          <div className="flex items-center gap-3.5 rounded-xl border border-slate-200 bg-slate-50 p-3">
+          <div className="flex items-center gap-3.5 rounded-xl border border-stone-200/80 bg-stone-50 p-3">
             {promo.imagen_url ? (
               <img
                 src={promo.imagen_url}
                 alt={promo.titulo}
-                className="h-14 w-14 rounded-lg object-cover border border-slate-200 shrink-0"
+                className="h-14 w-14 rounded-lg object-cover border border-stone-200/80 shrink-0"
               />
             ) : (
-              <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-indigo-100 text-indigo-600 shrink-0">
-                <Sparkles className="h-6 w-6" />
+              <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200/60 shrink-0">
+                <Sparkles className="h-5 w-5" strokeWidth={1.75} />
               </div>
             )}
             <div className="min-w-0 flex-1">
-              <span className="inline-block rounded-full bg-slate-200 px-2 py-0.5 text-[10px] font-semibold text-slate-700">
+              <span className="inline-block rounded-full bg-stone-200/80 px-2 py-0.5 text-[10px] font-semibold text-stone-700">
                 Oferta pre-cargada
               </span>
-              <p className="text-sm font-bold text-slate-900 truncate mt-0.5">
+              <p className="font-display text-sm font-bold text-stone-900 truncate mt-0.5">
                 {titulo || promo.titulo}
               </p>
               {descripcion && (
-                <p className="text-xs text-slate-500 truncate">{descripcion}</p>
+                <p className="text-xs text-stone-600 truncate">{descripcion}</p>
               )}
             </div>
           </div>
 
           {/* Selector de Tipo de Promoción (Estándar vs Flash) */}
           <div>
-            <label className="block text-sm font-semibold text-slate-800 mb-2">
+            <label className="block text-xs font-semibold text-stone-700 mb-2">
               Tipo de Promoción *
             </label>
             <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
               <button
                 type="button"
                 onClick={() => setEsFlash(false)}
-                className={`flex items-start gap-2.5 rounded-xl border p-3 text-left transition cursor-pointer ${
+                className={`flex items-start gap-2.5 rounded-xl border p-3 text-left transition-all duration-200 cursor-pointer ${
                   !esFlash
-                    ? 'border-indigo-600 bg-indigo-50/70 text-indigo-900 ring-2 ring-indigo-600/20'
-                    : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                    ? 'border-emerald-600 bg-emerald-50/60 text-stone-900 ring-2 ring-emerald-600/15'
+                    : 'border-stone-200/80 bg-white text-stone-700 hover:border-stone-300 hover:bg-stone-50'
                 }`}
               >
                 <input
@@ -282,13 +285,17 @@ export default function RepublishPromoModal({
                   name="republishPromoType"
                   checked={!esFlash}
                   onChange={() => setEsFlash(false)}
-                  className="mt-1 accent-indigo-600"
+                  className="mt-1 accent-emerald-600"
                 />
                 <div>
-                  <span className="block text-xs sm:text-sm font-bold">
+                  <span className="font-display flex items-center gap-1.5 text-xs sm:text-sm font-bold text-stone-900">
+                    <Calendar
+                      className="h-4 w-4 text-emerald-600"
+                      strokeWidth={1.75}
+                    />
                     Promoción Estándar
                   </span>
-                  <span className="text-[11px] text-slate-500">
+                  <span className="text-[11px] text-stone-600">
                     Fecha libre (mín. 1 día)
                   </span>
                 </div>
@@ -297,10 +304,10 @@ export default function RepublishPromoModal({
               <button
                 type="button"
                 onClick={() => setEsFlash(true)}
-                className={`flex items-start gap-2.5 rounded-xl border p-3 text-left transition cursor-pointer ${
+                className={`flex items-start gap-2.5 rounded-xl border p-3 text-left transition-all duration-200 cursor-pointer ${
                   esFlash
-                    ? 'border-amber-500 bg-amber-50/80 text-amber-950 ring-2 ring-amber-500/25'
-                    : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                    ? 'border-amber-600 bg-amber-50/70 text-amber-950 ring-2 ring-amber-500/20'
+                    : 'border-stone-200/80 bg-white text-stone-700 hover:border-stone-300 hover:bg-stone-50'
                 }`}
               >
                 <input
@@ -311,10 +318,11 @@ export default function RepublishPromoModal({
                   className="mt-1 accent-amber-600"
                 />
                 <div>
-                  <span className="block text-xs sm:text-sm font-bold">
-                    ⚡ Oferta Relámpago (Flash)
+                  <span className="font-display flex items-center gap-1.5 text-xs sm:text-sm font-bold text-stone-900">
+                    <Zap className="h-4 w-4 text-amber-600" strokeWidth={1.75} />
+                    Oferta Relámpago (Flash)
                   </span>
-                  <span className="text-[11px] text-slate-500">
+                  <span className="text-[11px] text-stone-600">
                     Vigencia rápida en horas
                   </span>
                 </div>
@@ -324,9 +332,9 @@ export default function RepublishPromoModal({
 
           {/* Selector de vigencia según el tipo elegido */}
           {esFlash ? (
-            <div className="rounded-xl border border-amber-200 bg-amber-50/40 p-3.5 space-y-2">
+            <div className="rounded-xl border border-amber-200/80 bg-amber-50/40 p-3.5 space-y-2">
               <label className="block text-xs font-semibold text-amber-900 flex items-center gap-1.5">
-                <Zap className="h-3.5 w-3.5 text-amber-600" />
+                <Zap className="h-4 w-4 text-amber-600" strokeWidth={1.75} />
                 Duración de la Oferta Flash *
               </label>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -337,14 +345,16 @@ export default function RepublishPromoModal({
                       key={op.id}
                       type="button"
                       onClick={() => setFlashOption(op.id)}
-                      className={`flex flex-col items-center justify-center rounded-xl border p-2 text-center transition cursor-pointer ${
+                      className={`flex flex-col items-center justify-center rounded-xl border p-2 text-center transition-all duration-200 cursor-pointer ${
                         selected
-                          ? 'border-amber-600 bg-amber-100/90 text-amber-950 ring-2 ring-amber-500/25'
-                          : 'border-amber-200/80 bg-white text-slate-700 hover:bg-amber-50'
+                          ? 'border-amber-600 bg-amber-100/80 text-amber-950 ring-2 ring-amber-500/20'
+                          : 'border-amber-200/70 bg-white text-stone-700 hover:bg-amber-50'
                       }`}
                     >
-                      <span className="text-xs font-bold">{op.label}</span>
-                      <span className="text-[10px] text-slate-500">
+                      <span className="font-display text-xs font-bold tabular-nums">
+                        {op.label}
+                      </span>
+                      <span className="text-[10px] text-stone-600 tabular-nums">
                         {op.description}
                       </span>
                     </button>
@@ -353,9 +363,12 @@ export default function RepublishPromoModal({
               </div>
             </div>
           ) : (
-            <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3.5 space-y-1.5">
-              <label className="block text-xs font-semibold text-slate-700 flex items-center gap-1.5">
-                <Calendar className="h-3.5 w-3.5 text-indigo-600" />
+            <div className="rounded-xl border border-stone-200/80 bg-stone-50/70 p-3.5 space-y-1.5">
+              <label className="block text-xs font-semibold text-stone-700 flex items-center gap-1.5">
+                <Calendar
+                  className="h-4 w-4 text-emerald-600"
+                  strokeWidth={1.75}
+                />
                 Fecha y hora de vencimiento (mínimo 1 día) *
               </label>
               <input
@@ -364,13 +377,13 @@ export default function RepublishPromoModal({
                 min={minStandardStr}
                 value={standardDateTime}
                 onChange={(e) => setStandardDateTime(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-600/20"
+                className="w-full rounded-xl border border-stone-200/90 bg-white px-3 py-2 text-sm text-stone-900 tabular-nums focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/15 transition-all duration-200"
               />
             </div>
           )}
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
+            <label className="block text-xs font-semibold text-stone-700 mb-1.5">
               Título de la Promoción *
             </label>
             <input
@@ -378,34 +391,34 @@ export default function RepublishPromoModal({
               required
               value={titulo}
               onChange={(e) => setTitulo(e.target.value)}
-              className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-600/20"
+              className="w-full rounded-xl border border-stone-200/90 bg-white px-3 py-2 text-sm text-stone-900 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/15 transition-all duration-200"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
+            <label className="block text-xs font-semibold text-stone-700 mb-1.5">
               Descripción (opcional)
             </label>
             <textarea
               rows={2}
               value={descripcion}
               onChange={(e) => setDescripcion(e.target.value)}
-              className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-600/20"
+              className="w-full rounded-xl border border-stone-200/90 bg-white px-3 py-2 text-sm text-stone-900 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/15 transition-all duration-200"
             />
           </div>
 
-          <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+          <div className="flex items-center justify-end gap-3 pt-3 border-t border-stone-200/80">
             <button
               type="button"
               onClick={onClose}
-              className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 transition cursor-pointer"
+              className="rounded-xl border border-stone-200/90 bg-white px-4 py-2.5 text-sm font-medium text-stone-600 hover:border-stone-300 hover:bg-stone-50 transition-all duration-200 cursor-pointer"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={loading}
-              className={`inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-white shadow-xs disabled:opacity-60 transition cursor-pointer ${
+              className={`font-display inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-bold text-white shadow-sm disabled:opacity-60 transition-all duration-200 cursor-pointer ${
                 esFlash
                   ? 'bg-amber-600 hover:bg-amber-700'
                   : 'bg-emerald-600 hover:bg-emerald-700'
@@ -413,13 +426,17 @@ export default function RepublishPromoModal({
             >
               {loading ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <Loader2 className="h-4 w-4 animate-spin" strokeWidth={1.75} />
                   Republicando...
                 </>
               ) : (
                 <>
-                  <RotateCcw className="h-4 w-4" />
-                  {esFlash ? '⚡ Activar Promo Flash' : 'Confirmar y Activar'}
+                  {esFlash ? (
+                    <Zap className="h-4 w-4" strokeWidth={1.75} />
+                  ) : (
+                    <RotateCcw className="h-4 w-4" strokeWidth={1.75} />
+                  )}
+                  {esFlash ? 'Activar Promo Flash' : 'Confirmar y Activar'}
                 </>
               )}
             </button>

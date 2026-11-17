@@ -11,6 +11,8 @@ import {
   Navigation,
   Heart,
   Zap,
+  Ticket,
+  Package,
 } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
@@ -41,12 +43,12 @@ function formatRemainingTime(venceEl) {
   const minutes = totalMinutes % 60;
 
   if (days > 0) {
-    return `${days}d ${hours}h restantes`;
+    return `${days}d ${hours}h`;
   }
   if (hours > 0) {
-    return `${hours}h ${minutes}m restantes`;
+    return `${hours}h ${minutes}m`;
   }
-  return `${minutes}m restantes`;
+  return `${minutes}m`;
 }
 
 function formatDistanceBadge(distanciaMetros) {
@@ -57,12 +59,60 @@ function formatDistanceBadge(distanciaMetros) {
   return `A ${metros} m`;
 }
 
+function formatCurrency(val) {
+  const num = Number(val);
+  if (Number.isNaN(num) || num <= 0) return null;
+  return `$${num.toLocaleString('es-AR')}`;
+}
+
+function extractPromoPricing(promo) {
+  if (!promo) return null;
+
+  const finalExplicit =
+    promo.precio_final ?? promo.precio_oferta ?? promo.precio ?? null;
+  const prevExplicit =
+    promo.precio_anterior ?? promo.precio_original ?? null;
+
+  if (finalExplicit != null) {
+    return {
+      finalPrice: formatCurrency(finalExplicit),
+      oldPrice: prevExplicit != null ? formatCurrency(prevExplicit) : null,
+    };
+  }
+
+  // Detectar precios mencionados en título o descripción (ej. "$4500 (antes $6000)")
+  const text = `${promo.titulo || ''} ${promo.descripcion || ''}`;
+  const matches = [...text.matchAll(/\$\s?(\d{1,3}(?:[.,]\d{3})*|\d+)/g)];
+  if (matches.length >= 2) {
+    const raw1 = Number(matches[0][1].replace(/[.,]/g, ''));
+    const raw2 = Number(matches[1][1].replace(/[.,]/g, ''));
+    if (!Number.isNaN(raw1) && !Number.isNaN(raw2) && raw1 !== raw2) {
+      const menor = Math.min(raw1, raw2);
+      const mayor = Math.max(raw1, raw2);
+      return {
+        finalPrice: formatCurrency(menor),
+        oldPrice: formatCurrency(mayor),
+      };
+    }
+  } else if (matches.length === 1) {
+    const raw1 = Number(matches[0][1].replace(/[.,]/g, ''));
+    if (!Number.isNaN(raw1) && raw1 > 0) {
+      return {
+        finalPrice: formatCurrency(raw1),
+        oldPrice: null,
+      };
+    }
+  }
+
+  return null;
+}
+
 function buildWhatsAppUrl(comercioTelefono, tituloPromo, comercioNombre) {
   if (!comercioTelefono) return null;
   const cleanPhone = String(comercioTelefono).replace(/[^\d]/g, '');
   if (!cleanPhone) return null;
   const text = encodeURIComponent(
-    `¡Hola ${comercioNombre || ''}! Vi tu promoción "${tituloPromo}" en OfertAr y me gustaría consultarte.`
+    `Hola ${comercioNombre || ''}, vi tu promoción "${tituloPromo}" en OfertAr y me gustaría consultarte.`
   );
   return `https://wa.me/${cleanPhone}?text=${text}`;
 }
@@ -76,12 +126,24 @@ export default function PromoList({
   favoriteIds = [],
   togglingFavoriteId = null,
   onToggleFavorite,
+  onOpenCanjeModal,
 }) {
   const [promociones, setPromociones] = useState([]);
   const [loading, setLoading] = useState(isSupabaseConfigured);
   const [error, setError] = useState(null);
   const [rubroSeleccionado, setRubroSeleccionado] = useState('todos');
   const [busqueda, setBusqueda] = useState('');
+
+  const handleWhatsAppClick = (promoId) => {
+    if (!promoId || !isSupabaseConfigured || !supabase) return;
+    supabase
+      .rpc('incrementar_metrica_promo', {
+        p_promocion_id: promoId,
+        p_tipo: 'whatsapp',
+      })
+      .then(() => {})
+      .catch(() => {});
+  };
 
   const fetchNearbyPromotions = useCallback(async () => {
     if (!isSupabaseConfigured || !supabase) {
@@ -182,13 +244,16 @@ export default function PromoList({
     <section className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-            <ShoppingBag className="h-5 w-5 text-indigo-600" />
+          <h2 className="font-display text-xl font-bold text-stone-900 flex items-center gap-2">
+            <ShoppingBag
+              className="h-5 w-5 text-emerald-600"
+              strokeWidth={1.75}
+            />
             Promociones Cercanas en tu Barrio
           </h2>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-stone-600">
             Ofertas activas dentro de un radio de{' '}
-            <strong className="text-slate-700">
+            <strong className="text-stone-900 tabular-nums">
               {selectedRadio >= 1000
                 ? `${selectedRadio / 1000} km`
                 : `${selectedRadio} m`}
@@ -201,23 +266,29 @@ export default function PromoList({
           type="button"
           onClick={fetchNearbyPromotions}
           disabled={loading || !isSupabaseConfigured}
-          className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 shadow-xs hover:bg-slate-50 disabled:opacity-50 cursor-pointer"
+          className="inline-flex items-center gap-1.5 rounded-xl border border-stone-200/80 bg-white px-3.5 py-2 text-xs font-semibold text-stone-700 shadow-sm hover:border-stone-300 hover:bg-stone-50 disabled:opacity-50 transition-all duration-200 cursor-pointer"
         >
-          <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
+          <RefreshCw
+            className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`}
+            strokeWidth={1.75}
+          />
           Actualizar
         </button>
       </div>
 
       {/* Buscador y filtro rápido por rubro */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-2xs space-y-3">
+      <div className="rounded-2xl border border-stone-200/80 bg-white p-4 shadow-sm space-y-3">
         <div className="relative">
-          <Search className="h-4 w-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <Search
+            className="h-4 w-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2"
+            strokeWidth={1.75}
+          />
           <input
             type="search"
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
             placeholder="Buscar por oferta o nombre del comercio..."
-            className="w-full rounded-xl border border-slate-200 bg-slate-50/60 pl-9 pr-3 py-2 text-xs sm:text-sm focus:border-indigo-600 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-600/20"
+            className="w-full rounded-xl border border-stone-200/90 bg-[#FAFAF9] pl-9 pr-3 py-2 text-xs sm:text-sm text-stone-900 placeholder:text-stone-400 focus:border-emerald-600 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600/15 transition-all duration-200"
           />
         </div>
 
@@ -229,10 +300,10 @@ export default function PromoList({
                 key={f.value}
                 type="button"
                 onClick={() => setRubroSeleccionado(f.value)}
-                className={`rounded-full px-3 py-1 text-xs font-semibold whitespace-nowrap transition cursor-pointer ${
+                className={`rounded-full px-3 py-1 text-xs font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer ${
                   active
-                    ? 'bg-indigo-600 text-white shadow-2xs'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200/70'
+                    ? 'bg-emerald-600 text-white shadow-xs'
+                    : 'bg-stone-100 text-stone-600 hover:bg-stone-200/70 hover:text-stone-900'
                 }`}
               >
                 {f.label}
@@ -243,11 +314,14 @@ export default function PromoList({
       </div>
 
       {!isSupabaseConfigured && (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 flex items-start gap-3">
-          <AlertCircle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+        <div className="rounded-2xl border border-amber-200/80 bg-amber-50 p-4 text-sm text-amber-800 flex items-start gap-3">
+          <AlertCircle
+            className="h-5 w-5 text-amber-600 shrink-0 mt-0.5"
+            strokeWidth={1.75}
+          />
           <div>
             <p className="font-semibold">Conexión con Supabase pendiente</p>
-            <p className="mt-0.5 text-amber-700">
+            <p className="mt-0.5 text-amber-800/90">
               Configura <code className="font-mono">VITE_SUPABASE_URL</code> y{' '}
               <code className="font-mono">VITE_SUPABASE_ANON_KEY</code> en el archivo{' '}
               <code className="font-mono">.env</code> para visualizar y publicar ofertas en vivo.
@@ -257,8 +331,11 @@ export default function PromoList({
       )}
 
       {error && (
-        <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 flex items-start gap-3">
-          <AlertCircle className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
+        <div className="rounded-2xl border border-red-200/80 bg-red-50 p-4 text-sm text-red-700 flex items-start gap-3">
+          <AlertCircle
+            className="h-5 w-5 text-red-600 shrink-0 mt-0.5"
+            strokeWidth={1.75}
+          />
           <span>{error}</span>
         </div>
       )}
@@ -268,23 +345,26 @@ export default function PromoList({
           {[1, 2, 3, 4].map((skeleton) => (
             <div
               key={skeleton}
-              className="h-64 animate-pulse rounded-2xl bg-white border border-slate-200 p-4 space-y-3"
+              className="h-64 animate-pulse rounded-2xl bg-white border border-stone-200/80 p-4 space-y-3"
             >
-              <div className="h-32 w-full rounded-xl bg-slate-200" />
-              <div className="h-4 w-2/3 rounded bg-slate-200" />
-              <div className="h-3 w-1/2 rounded bg-slate-200" />
+              <div className="h-32 w-full rounded-xl bg-stone-200/70" />
+              <div className="h-4 w-2/3 rounded bg-stone-200/70" />
+              <div className="h-3 w-1/2 rounded bg-stone-200/70" />
             </div>
           ))}
         </div>
       ) : promocionesFiltradas.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center">
-          <ShoppingBag className="mx-auto h-10 w-10 text-slate-400" />
-          <h3 className="mt-3 text-base font-semibold text-slate-800">
+        <div className="rounded-2xl border border-dashed border-stone-300 bg-white p-10 text-center shadow-sm">
+          <ShoppingBag
+            className="mx-auto h-10 w-10 text-stone-400"
+            strokeWidth={1.75}
+          />
+          <h3 className="font-display mt-3 text-base font-bold text-stone-900">
             {promociones.length === 0
               ? 'No hay promociones activas en este radio'
               : 'No se encontraron promociones con ese filtro'}
           </h3>
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="mt-1 text-sm text-stone-600">
             {promociones.length === 0
               ? 'Prueba ampliando el radio de búsqueda (ej. 3 km o 5 km) o seleccionando otro punto en el mapa.'
               : 'Prueba cambiando el rubro seleccionado o el texto de búsqueda.'}
@@ -320,16 +400,20 @@ export default function PromoList({
               promo.distancia_metros ?? promo.distancia
             );
             const remaining = formatRemainingTime(promo.vence_el);
+            const pricing = extractPromoPricing(promo);
             const waUrl = buildWhatsAppUrl(
               comercioTelefono,
               promo.titulo,
               comercioNombre
             );
+            const sinStock =
+              promo.stock_disponible != null &&
+              Number(promo.stock_disponible) <= 0;
 
             return (
               <article
                 key={promoId || index}
-                className="relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xs transition hover:shadow-md"
+                className="relative flex flex-col justify-between overflow-hidden rounded-2xl border border-stone-200/80 bg-white shadow-sm hover:border-stone-300 transition-all duration-200"
               >
                 <div>
                   <div className="relative">
@@ -337,23 +421,26 @@ export default function PromoList({
                       <img
                         src={promo.imagen_url}
                         alt={promo.titulo}
-                        className="h-44 w-full object-cover"
+                        className="h-44 w-full object-cover border-b border-stone-100"
                       />
                     ) : (
-                      <div className="flex h-36 w-full items-center justify-center bg-gradient-to-br from-indigo-50 to-slate-100 text-indigo-400">
-                        <ShoppingBag className="h-10 w-10 opacity-60" />
+                      <div className="flex h-36 w-full items-center justify-center bg-stone-100/80 border-b border-stone-200/60 text-stone-400">
+                        <ShoppingBag
+                          className="h-9 w-9 opacity-70"
+                          strokeWidth={1.75}
+                        />
                       </div>
                     )}
 
-                    {/* Badge Oferta Flash si aplica */}
+                    {/* Badge Oferta Flash (sin emojis, icono vectorial) */}
                     {promo.es_flash && (
-                      <span className="absolute top-3 left-3 inline-flex items-center gap-1 rounded-full bg-amber-500 px-2.5 py-1 text-[11px] font-extrabold text-white shadow-sm">
-                        <Zap className="h-3 w-3 fill-white" />
+                      <span className="absolute top-3 left-3 inline-flex items-center gap-1 rounded-full bg-amber-600 px-2.5 py-1 text-[11px] font-bold tracking-wide text-white shadow-xs">
+                        <Zap className="h-3.5 w-3.5" strokeWidth={1.75} />
                         FLASH
                       </span>
                     )}
 
-                    {/* Botón de Corazón (Favoritos / Guardados) en esquina superior derecha */}
+                    {/* Botón de Corazón (Favoritos / Guardados) */}
                     {onToggleFavorite && promoId != null && (
                       <button
                         type="button"
@@ -369,15 +456,18 @@ export default function PromoList({
                             ? 'Quitar de favoritos'
                             : 'Guardar en favoritos'
                         }
-                        className={`absolute top-3 right-3 flex h-9 w-9 items-center justify-center rounded-full border backdrop-blur-xs shadow-sm transition-all duration-200 active:scale-125 cursor-pointer ${
+                        className={`absolute top-3 right-3 flex h-9 w-9 items-center justify-center rounded-full border backdrop-blur-xs shadow-sm transition-all duration-200 active:scale-110 cursor-pointer ${
                           isFavorite
-                            ? 'border-rose-200 bg-rose-50/95 text-rose-500 scale-105'
-                            : 'border-white/60 bg-white/90 text-slate-500 hover:text-rose-500 hover:bg-white'
+                            ? 'border-rose-200 bg-rose-50/95 text-rose-600'
+                            : 'border-stone-200/80 bg-white/90 text-stone-500 hover:text-rose-600 hover:bg-white'
                         }`}
                       >
                         <Heart
+                          strokeWidth={1.75}
                           className={`h-4 w-4 transition-transform duration-200 ${
-                            isFavorite ? 'fill-rose-500 text-rose-500 scale-110' : ''
+                            isFavorite
+                              ? 'fill-rose-500 text-rose-500 scale-110'
+                              : ''
                           } ${isToggling ? 'animate-ping' : ''}`}
                         />
                       </button>
@@ -386,61 +476,116 @@ export default function PromoList({
 
                   <div className="p-4 space-y-2.5">
                     <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-                      <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2.5 py-1 font-medium text-indigo-700 capitalize">
-                        <Tag className="h-3 w-3" />
+                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200/60 px-2.5 py-0.5 font-medium text-emerald-700 capitalize">
+                        <Tag className="h-3.5 w-3.5" strokeWidth={1.75} />
                         {String(comercioRubro).replace('_', ' ')}
                       </span>
 
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex flex-wrap items-center gap-1.5 tabular-nums">
                         {distanciaBadge && (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-1 font-bold text-emerald-700">
-                            <Navigation className="h-3 w-3" />
+                          <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 border border-amber-200/60 px-2.5 py-0.5 font-semibold text-amber-800 tabular-nums">
+                            <Navigation
+                              className="h-3 w-3"
+                              strokeWidth={1.75}
+                            />
                             {distanciaBadge}
                           </span>
                         )}
 
                         {remaining && (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 font-medium text-amber-700">
-                            <Clock className="h-3 w-3" />
+                          <span className="inline-flex items-center gap-1 rounded-full bg-stone-100 px-2.5 py-0.5 font-medium text-stone-600 tabular-nums">
+                            <Clock className="h-3 w-3" strokeWidth={1.75} />
                             {remaining}
                           </span>
                         )}
                       </div>
                     </div>
 
-                    <h3 className="text-base font-bold text-slate-900 line-clamp-2">
-                      {promo.titulo}
-                    </h3>
+                    <div className="flex items-baseline justify-between gap-2">
+                      <h3 className="font-display text-base font-bold text-stone-900 line-clamp-2">
+                        {promo.titulo}
+                      </h3>
+
+                      {pricing?.finalPrice && (
+                        <div className="flex items-baseline gap-1.5 shrink-0 tabular-nums">
+                          {pricing.oldPrice && (
+                            <span className="text-xs text-stone-400 line-through">
+                              {pricing.oldPrice}
+                            </span>
+                          )}
+                          <span className="font-display text-base font-extrabold text-emerald-700">
+                            {pricing.finalPrice}
+                          </span>
+                        </div>
+                      )}
+                    </div>
 
                     {promo.descripcion && (
-                      <p className="text-xs text-slate-500 line-clamp-2">
+                      <p className="text-xs text-stone-600 line-clamp-2">
                         {promo.descripcion}
                       </p>
                     )}
 
-                    <p className="flex items-center gap-1.5 text-xs text-slate-600 pt-0.5">
-                      <Store className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                      <span className="font-semibold text-slate-800 truncate">
-                        {comercioNombre}
-                      </span>
-                    </p>
+                    <div className="flex items-center justify-between gap-2 pt-1">
+                      <p className="flex items-center gap-1.5 text-xs text-stone-600 min-w-0">
+                        <Store
+                          className="h-4 w-4 text-stone-400 shrink-0"
+                          strokeWidth={1.75}
+                        />
+                        <span className="font-semibold text-stone-800 truncate">
+                          {comercioNombre}
+                        </span>
+                      </p>
+
+                      {promo.stock_disponible != null && (
+                        <span
+                          className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-semibold shrink-0 tabular-nums ${
+                            sinStock
+                              ? 'bg-red-50 text-red-700 border border-red-200/60'
+                              : 'bg-stone-100 text-stone-700 border border-stone-200/60'
+                          }`}
+                        >
+                          <Package className="h-3 w-3" strokeWidth={1.75} />
+                          {sinStock
+                            ? 'Agotado'
+                            : `Stock: ${promo.stock_disponible}`}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
 
-                <div className="border-t border-slate-100 p-4 pt-3">
+                {/* Botones diferenciados: Canjear en local (primario sólido) y WhatsApp (secundario limpio con borde) */}
+                <div className="border-t border-stone-100 p-4 pt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  {onOpenCanjeModal && promoId != null && (
+                    <button
+                      type="button"
+                      disabled={sinStock}
+                      onClick={() => onOpenCanjeModal(promo)}
+                      className="font-display flex w-full items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-emerald-700 disabled:opacity-50 transition-all duration-200 cursor-pointer"
+                    >
+                      <Ticket className="h-4 w-4" strokeWidth={1.75} />
+                      {sinStock ? 'Sin stock' : 'Canjear en local'}
+                    </button>
+                  )}
+
                   {waUrl ? (
                     <a
                       href={waUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-semibold text-white hover:bg-emerald-700 transition"
+                      onClick={() => handleWhatsAppClick(promoId)}
+                      className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-stone-200/90 bg-white px-3 py-2.5 text-xs font-semibold text-stone-700 hover:border-stone-300 hover:bg-stone-50 transition-all duration-200"
                     >
-                      <MessageCircle className="h-4 w-4" />
-                      Pedir por WhatsApp
+                      <MessageCircle
+                        className="h-4 w-4 text-emerald-600"
+                        strokeWidth={1.75}
+                      />
+                      WhatsApp
                     </a>
                   ) : (
-                    <span className="block text-center text-xs text-slate-400 py-2">
-                      Sin WhatsApp disponible
+                    <span className="flex items-center justify-center text-center text-xs text-stone-400 py-2">
+                      Sin WhatsApp
                     </span>
                   )}
                 </div>
