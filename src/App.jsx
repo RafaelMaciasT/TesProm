@@ -109,9 +109,86 @@ function buildWhatsAppUrl(telefono, tituloPromo, nombreComercio) {
   return `https://wa.me/${cleanPhone}?text=${text}`;
 }
 
+function parseUbicacionCoords(rawUbicacion) {
+  if (!rawUbicacion) return null;
+
+  if (typeof rawUbicacion === 'string') {
+    if (rawUbicacion.includes('POINT')) {
+      const match = rawUbicacion.match(
+        /POINT\s*\(\s*([-\d.]+)\s+([-\d.]+)\s*\)/i
+      );
+      if (match) {
+        const lng = Number(match[1]);
+        const lat = Number(match[2]);
+        if (!Number.isNaN(lat) && !Number.isNaN(lng)) {
+          return { lat, lng };
+        }
+      }
+    } else if (
+      rawUbicacion.length >= 42 &&
+      /^[0-9a-fA-F]+$/.test(rawUbicacion.trim())
+    ) {
+      try {
+        const clean = rawUbicacion.trim();
+        const isLE = clean.slice(0, 2) === '01';
+        const coordHex = clean.slice(-32);
+        const bytes = new Uint8Array(16);
+        for (let i = 0; i < 16; i += 1) {
+          bytes[i] = parseInt(coordHex.slice(i * 2, i * 2 + 2), 16);
+        }
+        const view = new DataView(bytes.buffer);
+        const lng = view.getFloat64(0, isLE);
+        const lat = view.getFloat64(8, isLE);
+        if (
+          !Number.isNaN(lat) &&
+          !Number.isNaN(lng) &&
+          lat >= -90 &&
+          lat <= 90 &&
+          lng >= -180 &&
+          lng <= 180
+        ) {
+          return { lat, lng };
+        }
+      } catch {
+        return null;
+      }
+    }
+  }
+
+  if (
+    typeof rawUbicacion === 'object' &&
+    Array.isArray(rawUbicacion.coordinates) &&
+    rawUbicacion.coordinates.length >= 2
+  ) {
+    const lng = Number(rawUbicacion.coordinates[0]);
+    const lat = Number(rawUbicacion.coordinates[1]);
+    if (!Number.isNaN(lat) && !Number.isNaN(lng)) {
+      return { lat, lng };
+    }
+  }
+
+  return null;
+}
+
+function calculateDistanceMeters(lat1, lng1, lat2, lng2) {
+  const R = 6371000;
+  const toRad = (deg) => (deg * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRad(lat1)) *
+      Math.cos(toRad(lat2)) *
+      Math.sin(dLng / 2) *
+      Math.sin(dLng / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
 export default function App() {
   const [activeTab, setActiveTab] = useState('explorar'); // 'explorar' | 'perfil' | 'comercios'
   const [session, setSession] = useState(null);
+  const [profileNameDb, setProfileNameDb] = useState('');
   const [comercios, setComercios] = useState([]);
   const [loadingComercios, setLoadingComercios] = useState(false);
   const [loadingComercioPromosId, setLoadingComercioPromosId] = useState(null);
@@ -153,6 +230,7 @@ export default function App() {
   );
   const [searchRadiusMeters, setSearchRadiusMeters] = useState(1000);
   const [nearbyPromos, setNearbyPromos] = useState([]);
+  const [nearbyComercios, setNearbyComercios] = useState([]);
 
   const showTemporaryFeedback = (type, message) => {
     setFeedbackBanner({ type, message });
@@ -211,6 +289,168 @@ export default function App() {
       }
     );
   }, []);
+
+  // Consulta todos los comercios cercanos en el radio (con o sin promociones activas)
+  const fetchNearbyComerciosForMap = useCallback(async () => {
+    if (!isSupabaseConfigured || !supabase) return;
+
+    try {
+      // 1. Intentar RPC PostGIS `obtener_comercios_cercanos` (LEFT JOIN comercios -> promociones)
+      const { data: rpcData, error: rpcError } = await supabase.rpc(
+        'obtener_comercios_cercanos',
+        {
+          lat_origen: neighborPosition.lat,
+          lng_origen: neighborPosition.lng,
+          radio_metros: searchRadiusMeters,
+        }
+      );
+
+      if (!rpcError && Array.isArray(rpcData)) {
+        setNearbyComercios(rpcData);
+        return;
+      }
+
+      // 2. Fallback automático: consultar tabla `comercios` con sus `promociones` y filtrar por radio
+      const { data: allComercios, error: tableError } = await supabase
+        .from('comercios')
+        .select('*, promociones(*)');
+
+      if (tableError || !Array.isArray(allComercios)) {
+        setNearbyComercios([]);
+        return;
+      }
+
+      const now = new Date();
+      const mapped = allComercios
+        .map((com) => {
+          const coords =
+            com.lat != null && com.lng != null
+              ? { lat: Number(com.lat), lng: Number(com.lng) }
+              : parseUbicacionCoords(com.ubicacion);
+
+          if (!coords) return null;
+
+          const distancia = calculateDistanceMeters(
+            neighborPosition.lat,
+            neighborPosition.lng,
+            coords.lat,
+            coords.lng
+          );
+
+          if (distancia > searchRadiusMeters) return null;
+
+          const promosVigentes = (com.promociones || []).filter((p) => {
+            const notExpired = !p.vence_el || new Date(p.vence_el) > now;
+            const hasStock =
+              p.stock_disponible == null || Number(p.stock_disponible) > 0;
+            return notExpired && hasStock;
+          });
+
+          return {
+            comercio_id: com.id,
+            nombre: com.nombre,
+            rubro: com.rubro,
+            telefono_whatsapp: com.telefono_whatsapp,
+            ubicacion: com.ubicacion,
+            lat: coords.lat,
+            lng: coords.lng,
+            distancia_metros: distancia,
+            promos_activas_count: promosVigentes.length,
+            promos_activas: promosVigentes,
+          };
+        })
+        .filter(Boolean);
+
+      setNearbyComercios(mapped);
+    } catch {
+      setNearbyComercios([]);
+    }
+  }, [neighborPosition.lat, neighborPosition.lng, searchRadiusMeters]);
+
+  useEffect(() => {
+    if (!isSupabaseConfigured || !supabase) return;
+
+    let cancelled = false;
+    const load = async () => {
+      await Promise.resolve();
+      if (!cancelled) {
+        fetchNearbyComerciosForMap();
+      }
+    };
+    load();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [fetchNearbyComerciosForMap, refreshKey]);
+
+  // Unificar comercios cercanos con promociones devueltas por obtener_promos_cercanas
+  const mapMarkers = useMemo(() => {
+    const byComercio = new Map();
+
+    for (const com of nearbyComercios) {
+      const key = String(com.comercio_id || com.id || com.nombre);
+      byComercio.set(key, {
+        ...com,
+        promos_activas: Array.isArray(com.promos_activas)
+          ? [...com.promos_activas]
+          : [],
+      });
+    }
+
+    for (const promo of nearbyPromos) {
+      const key = String(
+        promo.comercio_id ||
+          promo.comercios?.id ||
+          promo.comercio_nombre ||
+          promo.id
+      );
+      const existing = byComercio.get(key);
+      if (existing) {
+        const alreadyIncluded = existing.promos_activas.some(
+          (p) => String(p.id) === String(promo.id)
+        );
+        if (!alreadyIncluded && promo.titulo) {
+          existing.promos_activas.push(promo);
+        }
+        existing.promos_activas_count = Math.max(
+          Number(existing.promos_activas_count) || 0,
+          existing.promos_activas.length
+        );
+        if (existing.lat == null && promo.comercio_lat != null) {
+          existing.lat = promo.comercio_lat;
+          existing.lng = promo.comercio_lng;
+        }
+      } else {
+        byComercio.set(key, {
+          comercio_id: promo.comercio_id,
+          nombre:
+            promo.comercio_nombre ||
+            promo.nombre_comercio ||
+            promo.comercios?.nombre ||
+            'Comercio',
+          rubro:
+            promo.comercio_rubro ||
+            promo.rubro ||
+            promo.comercios?.rubro ||
+            'Comercio',
+          telefono_whatsapp:
+            promo.comercio_telefono ||
+            promo.telefono_whatsapp ||
+            promo.comercios?.telefono_whatsapp ||
+            '',
+          lat: promo.comercio_lat ?? promo.lat ?? null,
+          lng: promo.comercio_lng ?? promo.lng ?? null,
+          ubicacion: promo.comercio_ubicacion ?? promo.ubicacion ?? null,
+          distancia_metros: promo.distancia_metros ?? promo.distancia ?? null,
+          promos_activas_count: 1,
+          promos_activas: [promo],
+        });
+      }
+    }
+
+    return Array.from(byComercio.values());
+  }, [nearbyComercios, nearbyPromos]);
 
   // Consulta las ofertas guardadas por el usuario en `favoritos_usuario`
   const fetchUserFavoritos = useCallback(async (userId) => {
@@ -363,6 +603,37 @@ export default function App() {
     }
   }, []);
 
+  const fetchUserProfileName = useCallback(async (user) => {
+    if (!user?.id || !isSupabaseConfigured || !supabase) {
+      setProfileNameDb('');
+      return;
+    }
+
+    const metaName =
+      user.user_metadata?.full_name ||
+      user.user_metadata?.username ||
+      user.user_metadata?.nombre ||
+      '';
+    if (metaName) {
+      setProfileNameDb(metaName);
+      return;
+    }
+
+    try {
+      const { data } = await supabase
+        .from('perfiles')
+        .select('nombre, full_name')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (data?.nombre || data?.full_name) {
+        setProfileNameDb(data.nombre || data.full_name);
+      }
+    } catch {
+      // Ignorar si no existe tabla perfiles adicional
+    }
+  }, []);
+
   useEffect(() => {
     if (!isSupabaseConfigured || !supabase) return;
 
@@ -371,6 +642,7 @@ export default function App() {
       if (currentSession?.user?.id) {
         fetchUserComercios(currentSession.user.id);
         fetchUserFavoritos(currentSession.user.id);
+        fetchUserProfileName(currentSession.user);
       }
     });
 
@@ -381,9 +653,11 @@ export default function App() {
       if (newSession?.user?.id) {
         fetchUserComercios(newSession.user.id);
         fetchUserFavoritos(newSession.user.id);
+        fetchUserProfileName(newSession.user);
       } else {
         setComercios([]);
         setFavoritos([]);
+        setProfileNameDb('');
         setIsPromoModalOpen(false);
         setActiveTab((prev) => (prev === 'comercios' ? 'explorar' : prev));
       }
@@ -392,7 +666,7 @@ export default function App() {
     return () => {
       subscription.unsubscribe();
     };
-  }, [fetchUserComercios, fetchUserFavoritos]);
+  }, [fetchUserComercios, fetchUserFavoritos, fetchUserProfileName]);
 
   const handleSelectTab = (tab) => {
     setActiveTab(tab);
@@ -589,6 +863,13 @@ export default function App() {
     [favoritos]
   );
 
+  const userDisplayName =
+    session?.user?.user_metadata?.full_name ||
+    session?.user?.user_metadata?.username ||
+    session?.user?.user_metadata?.nombre ||
+    profileNameDb ||
+    '';
+
   const totalPromosActivasUsuario = comercios.reduce((acc, com) => {
     const activas = (com.promociones || []).filter(isPromoActive).length;
     return acc + activas;
@@ -653,7 +934,7 @@ export default function App() {
                       strokeWidth={1.75}
                     />
                     <span className="max-w-[160px] sm:max-w-none truncate">
-                      {session.user.email}
+                      {userDisplayName || session.user.email}
                     </span>
                   </button>
                 </>
@@ -835,8 +1116,10 @@ export default function App() {
                     setGeoStatus('manual');
                   }}
                   radiusMeters={searchRadiusMeters}
-                  markers={nearbyPromos}
-                  helperText="Haz clic en el mapa para cambiar tu punto de origen"
+                  markers={mapMarkers}
+                  showLegend={true}
+                  onOpenCanjeModal={(promo) => setPromoForCanje(promo)}
+                  helperText="Haz clic en el mapa o arrastra tu pin para cambiar el origen"
                 />
               </div>
             </div>
@@ -896,7 +1179,7 @@ export default function App() {
                           Vecino / Cuenta activa
                         </span>
                         <h2 className="font-display text-xl font-bold text-stone-900 mt-1">
-                          Mi Perfil
+                          {userDisplayName || 'Mi Perfil'}
                         </h2>
                         <p className="text-xs text-stone-600">
                           {session.user.email}
@@ -914,7 +1197,22 @@ export default function App() {
                     </button>
                   </div>
 
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                    <div className="rounded-xl border border-stone-200/80 bg-[#FAFAF9] p-4 space-y-1">
+                      <span className="text-xs font-medium text-stone-600 flex items-center gap-1.5">
+                        <User
+                          className="h-4 w-4 text-emerald-600"
+                          strokeWidth={1.75}
+                        />
+                        Nombre de perfil
+                      </span>
+                      <p className="text-sm font-semibold text-stone-900 truncate">
+                        {userDisplayName ||
+                          session.user.email?.split('@')[0] ||
+                          'Usuario'}
+                      </p>
+                    </div>
+
                     <div className="rounded-xl border border-stone-200/80 bg-[#FAFAF9] p-4 space-y-1">
                       <span className="text-xs font-medium text-stone-600 flex items-center gap-1.5">
                         <Mail
@@ -1290,21 +1588,10 @@ export default function App() {
               </div>
 
               <div className="flex flex-wrap items-center gap-3">
-                {comercios.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => handleOpenNewPromo(comercios[0].id)}
-                    className="font-display inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs sm:text-sm font-bold text-white shadow-sm hover:bg-emerald-700 transition-all duration-200 cursor-pointer"
-                  >
-                    <Sparkles className="h-4 w-4" strokeWidth={1.75} />
-                    Nueva Promo
-                  </button>
-                )}
-
                 <button
                   type="button"
                   onClick={() => setIsRegisterBusinessOpen(true)}
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-stone-200/90 bg-white px-4 py-2.5 text-xs sm:text-sm font-semibold text-stone-700 shadow-xs hover:border-stone-300 hover:bg-stone-50 transition-all duration-200 cursor-pointer"
+                  className="font-display inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs sm:text-sm font-bold text-white shadow-sm hover:bg-emerald-700 transition-all duration-200 cursor-pointer"
                 >
                   <Plus className="h-4 w-4" strokeWidth={1.75} />
                   Agregar otro local

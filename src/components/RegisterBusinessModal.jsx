@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import LocationPicker from './LocationPicker';
+import AddressAutocomplete from './AddressAutocomplete';
 
 const RUBROS = [
   { value: 'gastronomia', label: 'Gastronomía' },
@@ -54,6 +55,11 @@ export default function RegisterBusinessModal({
   const handleClose = () => {
     resetForm();
     onClose();
+  };
+
+  const handleSelectAddressSuggestion = ({ lat, lng, address }) => {
+    setDireccion(address);
+    setLocation({ lat, lng });
   };
 
   const handleSubmit = async (e) => {
@@ -156,7 +162,7 @@ export default function RegisterBusinessModal({
                 Vincula tu Comercio / Sucursal
               </h2>
               <p className="text-xs text-stone-600">
-                Registra un local con su ubicación en el mapa para publicar ofertas
+                Busca la dirección de tu local o ajusta el marcador en el mapa
               </p>
             </div>
           </div>
@@ -215,21 +221,14 @@ export default function RegisterBusinessModal({
 
             <div>
               <label className="block text-xs font-semibold text-stone-700 mb-1.5">
-                Dirección / Sucursal
+                Dirección / Sucursal (Autocompletado)
               </label>
-              <div className="relative">
-                <MapPin
-                  className="h-4 w-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2"
-                  strokeWidth={1.75}
-                />
-                <input
-                  type="text"
-                  value={direccion}
-                  onChange={(e) => setDireccion(e.target.value)}
-                  placeholder="Ej. Av. Corrientes 1234"
-                  className="w-full rounded-xl border border-stone-200/90 bg-white pl-9 pr-3 py-2 text-sm text-stone-900 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/15 transition-all duration-200"
-                />
-              </div>
+              <AddressAutocomplete
+                value={direccion}
+                onChange={setDireccion}
+                onSelectLocation={handleSelectAddressSuggestion}
+                placeholder="Ej. Av. Corrientes 1234, CABA"
+              />
             </div>
           </div>
 

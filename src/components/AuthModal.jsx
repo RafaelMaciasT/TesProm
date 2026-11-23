@@ -3,6 +3,7 @@ import {
   X,
   Mail,
   Lock,
+  User,
   Loader2,
   AlertCircle,
   CheckCircle2,
@@ -12,8 +13,10 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
   const [mode, setMode] = useState('login'); // 'login' | 'register'
+  const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
   const [infoMsg, setInfoMsg] = useState(null);
@@ -30,6 +33,34 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
     resetMessages();
   };
 
+  const syncUserProfileTable = async (user, trimmedName, trimmedEmail) => {
+    if (!user?.id || !supabase) return;
+    try {
+      const { error } = await supabase.from('perfiles').upsert(
+        {
+          id: user.id,
+          user_id: user.id,
+          nombre: trimmedName,
+          full_name: trimmedName,
+          email: trimmedEmail,
+        },
+        { onConflict: 'id' }
+      );
+      if (error) {
+        await supabase.from('profiles').upsert(
+          {
+            id: user.id,
+            full_name: trimmedName,
+            username: trimmedName,
+          },
+          { onConflict: 'id' }
+        );
+      }
+    } catch {
+      // Ignorar de forma segura si la tabla adicional de perfiles no existe
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     resetMessages();
@@ -39,7 +70,22 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
       return;
     }
 
-    if (password.length < 6) {
+    if (mode === 'register') {
+      if (fullName.trim().length < 2) {
+        setErrorMsg('El nombre de perfil debe tener al menos 2 caracteres.');
+        return;
+      }
+
+      if (password.length < 6) {
+        setErrorMsg('La contraseña debe tener al menos 6 caracteres.');
+        return;
+      }
+
+      if (password !== confirmPassword) {
+        setErrorMsg('Las contraseñas no coinciden');
+        return;
+      }
+    } else if (password.length < 6) {
       setErrorMsg('La contraseña debe tener al menos 6 caracteres.');
       return;
     }
@@ -65,20 +111,36 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
         if (onAuthSuccess) onAuthSuccess(data.session);
         onClose();
       } else {
+        const trimmedName = fullName.trim();
+        const trimmedEmail = email.trim();
+
         const { data, error } = await supabase.auth.signUp({
-          email: email.trim(),
+          email: trimmedEmail,
           password,
+          options: {
+            data: {
+              full_name: trimmedName,
+              username: trimmedName,
+              nombre: trimmedName,
+            },
+          },
         });
 
         if (error) throw error;
+
+        if (data?.user) {
+          await syncUserProfileTable(data.user, trimmedName, trimmedEmail);
+        }
 
         if (data?.session) {
           if (onAuthSuccess) onAuthSuccess(data.session);
           onClose();
         } else {
           setInfoMsg(
-            'Cuenta creada. Si tienes activada la confirmación por correo, revisa tu bandeja de entrada para iniciar sesión.'
+            'Cuenta creada con éxito. Si tienes activada la confirmación por correo, revisa tu bandeja de entrada para iniciar sesión.'
           );
+          setPassword('');
+          setConfirmPassword('');
           setMode('login');
         }
       }
@@ -92,8 +154,8 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/50 p-4 backdrop-blur-xs">
-      <div className="relative w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-sm border border-stone-200/80">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/50 p-4 backdrop-blur-xs overflow-y-auto">
+      <div className="relative my-8 w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-sm border border-stone-200/80">
         <div className="flex items-center justify-between border-b border-stone-200/80 px-6 py-4">
           <div className="flex items-center gap-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200/60">
@@ -166,9 +228,32 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
             </div>
           )}
 
+          {mode === 'register' && (
+            <div>
+              <label className="block text-xs font-semibold text-stone-700 mb-1.5">
+                Nombre de perfil *
+              </label>
+              <div className="relative">
+                <User
+                  className="h-4 w-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2"
+                  strokeWidth={1.75}
+                />
+                <input
+                  type="text"
+                  required
+                  minLength={2}
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="Ej. Martín Gómez"
+                  className="w-full rounded-xl border border-stone-200/90 bg-white pl-9 pr-3 py-2.5 text-sm text-stone-900 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/15 transition-all duration-200"
+                />
+              </div>
+            </div>
+          )}
+
           <div>
             <label className="block text-xs font-semibold text-stone-700 mb-1.5">
-              Correo Electrónico
+              Correo Electrónico *
             </label>
             <div className="relative">
               <Mail
@@ -188,7 +273,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
 
           <div>
             <label className="block text-xs font-semibold text-stone-700 mb-1.5">
-              Contraseña
+              Contraseña *
             </label>
             <div className="relative">
               <Lock
@@ -206,6 +291,29 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
               />
             </div>
           </div>
+
+          {mode === 'register' && (
+            <div>
+              <label className="block text-xs font-semibold text-stone-700 mb-1.5">
+                Confirmar contraseña *
+              </label>
+              <div className="relative">
+                <Lock
+                  className="h-4 w-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2"
+                  strokeWidth={1.75}
+                />
+                <input
+                  type="password"
+                  required
+                  minLength={6}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Repite tu contraseña"
+                  className="w-full rounded-xl border border-stone-200/90 bg-white pl-9 pr-3 py-2.5 text-sm text-stone-900 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/15 transition-all duration-200"
+                />
+              </div>
+            </div>
+          )}
 
           <button
             type="submit"
