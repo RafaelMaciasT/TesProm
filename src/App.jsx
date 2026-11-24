@@ -48,6 +48,7 @@ import ModalCanjeTemporal from './components/ModalCanjeTemporal';
 import PanelCanjesYMetricas from './components/PanelCanjesYMetricas';
 import LocationPicker from './components/LocationPicker';
 import MostradorView from './components/MostradorView';
+import CouponValidatorBox from './components/CouponValidatorBox';
 
 const OBELISCO_CABA = { lat: -34.6037, lng: -58.3816 };
 
@@ -194,7 +195,10 @@ function calculateDistanceMeters(lat1, lng1, lat2, lng2) {
 
 export default function App() {
   const [isMostradorRoute, setIsMostradorRoute] = useState(
-    () => window.location.pathname === '/mostrador'
+    () =>
+      window.location.pathname === '/mostrador' ||
+      window.location.pathname.startsWith('/mostrador/') ||
+      window.location.hash === '#/mostrador'
   );
   const [activeTab, setActiveTab] = useState('explorar'); // 'explorar' | 'perfil' | 'comercios'
   const [session, setSession] = useState(null);
@@ -236,11 +240,19 @@ export default function App() {
   const [copiedCodigoComercioId, setCopiedCodigoComercioId] = useState(null);
 
   useEffect(() => {
-    const handlePopState = () => {
-      setIsMostradorRoute(window.location.pathname === '/mostrador');
+    const checkRoute = () => {
+      setIsMostradorRoute(
+        window.location.pathname === '/mostrador' ||
+          window.location.pathname.startsWith('/mostrador/') ||
+          window.location.hash === '#/mostrador'
+      );
     };
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
+    window.addEventListener('popstate', checkRoute);
+    window.addEventListener('hashchange', checkRoute);
+    return () => {
+      window.removeEventListener('popstate', checkRoute);
+      window.removeEventListener('hashchange', checkRoute);
+    };
   }, []);
 
   const navigateToMostrador = () => {
@@ -2012,16 +2024,35 @@ export default function App() {
                                 ...prev,
                                 [loc.id]: true,
                               }));
+                              selectSubTabForComercio(loc.id, 'validar_caja');
+                              fetchPromosForComercio(loc.id);
+                            }}
+                            className="inline-flex items-center gap-1.5 rounded-xl border border-orange-300 bg-orange-50 px-3.5 py-2 text-xs font-bold text-orange-800 hover:bg-orange-100 transition-all duration-200 cursor-pointer"
+                          >
+                            <QrCode
+                              className="h-4 w-4 text-orange-600"
+                              strokeWidth={1.75}
+                            />
+                            Validar Cupón en Caja
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setExpandedComercios((prev) => ({
+                                ...prev,
+                                [loc.id]: true,
+                              }));
                               selectSubTabForComercio(loc.id, 'metricas');
                               fetchPromosForComercio(loc.id);
                             }}
-                            className="inline-flex items-center gap-1.5 rounded-xl border border-orange-200/80 bg-orange-50/70 px-3.5 py-2 text-xs font-semibold text-orange-800 hover:bg-orange-100/80 transition-all duration-200 cursor-pointer"
+                            className="inline-flex items-center gap-1.5 rounded-xl border border-orange-200/80 bg-white px-3.5 py-2 text-xs font-semibold text-stone-700 hover:border-orange-300 hover:bg-orange-50/40 transition-all duration-200 cursor-pointer"
                           >
                             <BarChart3
-                              className="h-4 w-4 text-orange-700"
+                              className="h-4 w-4 text-orange-600"
                               strokeWidth={1.75}
                             />
-                            Validar PIN / Métricas BI
+                            Métricas BI
                           </button>
 
                           <button
@@ -2098,6 +2129,27 @@ export default function App() {
                               <button
                                 type="button"
                                 onClick={() =>
+                                  selectSubTabForComercio(
+                                    loc.id,
+                                    'validar_caja'
+                                  )
+                                }
+                                className={`font-display inline-flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-xs font-bold transition-all duration-200 cursor-pointer ${
+                                  currentSubTab === 'validar_caja'
+                                    ? 'bg-orange-600 text-white shadow-xs'
+                                    : 'bg-white text-stone-600 border border-stone-200/80 hover:border-stone-300 hover:text-stone-900'
+                                }`}
+                              >
+                                <QrCode
+                                  className="h-3.5 w-3.5"
+                                  strokeWidth={1.75}
+                                />
+                                Validar Cupón en Caja
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() =>
                                   selectSubTabForComercio(loc.id, 'metricas')
                                 }
                                 className={`font-display inline-flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-xs font-bold transition-all duration-200 cursor-pointer ${
@@ -2110,7 +2162,7 @@ export default function App() {
                                   className="h-3.5 w-3.5"
                                   strokeWidth={1.75}
                                 />
-                                Canjes PIN y Métricas BI
+                                Métricas del Comercio
                               </button>
                             </div>
 
@@ -2371,7 +2423,20 @@ export default function App() {
                             </>
                           )}
 
-                          {/* SUB-PESTAÑA 3: PANEL DE CANJES Y MÉTRICAS BI */}
+                          {/* SUB-PESTAÑA 3: VALIDAR CUPÓN EN CAJA (Cámara QR + Input TP-XXXX + Canje sin QR) */}
+                          {currentSubTab === 'validar_caja' && (
+                            <CouponValidatorBox
+                              comercioId={loc.id}
+                              comercioNombre={loc.nombre}
+                              promosVigentes={promosActivas}
+                              onCouponValidated={(id) => {
+                                fetchPromosForComercio(id);
+                                setRefreshKey((prev) => prev + 1);
+                              }}
+                            />
+                          )}
+
+                          {/* SUB-PESTAÑA 4: PANEL DE MÉTRICAS DEL JEFE */}
                           {currentSubTab === 'metricas' && (
                             <PanelCanjesYMetricas
                               comercioId={loc.id}
