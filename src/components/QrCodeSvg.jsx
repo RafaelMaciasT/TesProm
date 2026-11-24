@@ -1,5 +1,5 @@
 // Generador QR SVG puro (ISO/IEC 18004, Nivel L, Versiones 1 a 10) sin dependencias externas
-constVERSION_CAPACITIES_L = [
+const VERSION_CAPACITIES_L = [
   0, 17, 32, 53, 78, 106, 134, 154, 192, 230, 271,
 ];
 
@@ -88,7 +88,7 @@ export function generateQrMatrix(text) {
   let version = 1;
   while (
     version <= 10 &&
-    utf8.length > constVERSION_CAPACITIES_L[version]
+    utf8.length > VERSION_CAPACITIES_L[version]
   ) {
     version += 1;
   }
@@ -96,7 +96,7 @@ export function generateQrMatrix(text) {
     version = 10;
   }
 
-  const payload = utf8.slice(0, constVERSION_CAPACITIES_L[version]);
+  const payload = utf8.slice(0, VERSION_CAPACITIES_L[version]);
   const totalCodewords = getTotalModules(version);
   const ecPerBlock = EC_CODEWORDS_L[version];
   const numBlocks = NUM_BLOCKS_L[version];
