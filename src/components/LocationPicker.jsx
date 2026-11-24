@@ -54,8 +54,8 @@ function createActivePromoStoreIcon(promosCount = 1) {
     className: 'bg-transparent border-0',
     html: `
       <div class="relative flex items-center justify-center w-10 h-10">
-        <span class="absolute inline-flex h-8 w-8 rounded-full bg-amber-400 opacity-75 animate-ping"></span>
-        <div class="relative flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 text-white border-2 border-white shadow-md">
+        <span class="absolute inline-flex h-8 w-8 rounded-full bg-orange-400 opacity-75 animate-ping"></span>
+        <div class="relative flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-br from-orange-500 to-orange-600 text-white border-2 border-white shadow-md">
           <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/>
           </svg>
@@ -285,9 +285,9 @@ function LocationMarker({ position, onChange, radiusMeters }) {
           center={[position.lat, position.lng]}
           radius={radiusMeters}
           pathOptions={{
-            color: '#059669',
-            fillColor: '#10b981',
-            fillOpacity: 0.11,
+            color: '#ea580c',
+            fillColor: '#f97316',
+            fillOpacity: 0.12,
             weight: 1.75,
           }}
         />
@@ -381,7 +381,7 @@ export default function LocationPicker({
                     {/* Encabezado de la tarjeta del comercio en el Popup */}
                     <div className="space-y-1 border-b border-stone-200/80 pb-2">
                       <div className="flex items-center justify-between gap-1.5">
-                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200/60 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 capitalize">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-orange-50 border border-orange-200/60 px-2 py-0.5 text-[10px] font-semibold text-orange-700 capitalize">
                           <Tag className="h-2.5 w-2.5" strokeWidth={1.75} />
                           {String(storeRubro).replace('_', ' ')}
                         </span>
@@ -389,7 +389,7 @@ export default function LocationPicker({
                         <span
                           className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
                             openStatus.isOpen
-                              ? 'bg-emerald-50 text-emerald-700'
+                              ? 'bg-orange-50 text-orange-700'
                               : 'bg-stone-100 text-stone-600'
                           }`}
                         >
@@ -400,7 +400,7 @@ export default function LocationPicker({
 
                       <p className="font-display text-sm font-bold text-stone-900 flex items-center gap-1.5 pt-0.5">
                         <Store
-                          className="h-3.5 w-3.5 text-emerald-600 shrink-0"
+                          className="h-3.5 w-3.5 text-orange-600 shrink-0"
                           strokeWidth={1.75}
                         />
                         <span>{storeName}</span>
@@ -415,7 +415,7 @@ export default function LocationPicker({
                       </p>
 
                       {dist != null && (
-                        <p className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-700 tabular-nums">
+                        <p className="inline-flex items-center gap-1 text-[11px] font-semibold text-orange-700 tabular-nums">
                           <Navigation className="h-3 w-3" strokeWidth={1.75} />
                           A {Math.round(Number(dist))} m de tu ubicación
                         </p>
@@ -426,9 +426,9 @@ export default function LocationPicker({
                     {hasActivePromos ? (
                       <div className="space-y-2">
                         <div className="flex items-center justify-between">
-                          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-800">
+                          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-orange-800">
                             <Zap
-                              className="h-3.5 w-3.5 text-amber-600"
+                              className="h-3.5 w-3.5 text-orange-600"
                               strokeWidth={1.75}
                             />
                             {promosCount}{' '}
@@ -442,7 +442,7 @@ export default function LocationPicker({
                           {promosActivas.map((p, pIdx) => (
                             <div
                               key={p.id || pIdx}
-                              className="rounded-lg border border-amber-200/80 bg-amber-50/50 p-2 space-y-1.5"
+                              className="rounded-lg border border-orange-200/80 bg-orange-50/50 p-2 space-y-1.5"
                             >
                               <p className="font-display text-xs font-bold text-stone-900 leading-snug">
                                 {p.titulo}
@@ -463,7 +463,7 @@ export default function LocationPicker({
                                       comercio_telefono: storePhone,
                                     })
                                   }
-                                  className="font-display w-full inline-flex items-center justify-center gap-1 rounded-lg bg-emerald-600 px-2.5 py-1.5 text-[11px] font-bold text-white hover:bg-emerald-700 transition-colors cursor-pointer"
+                                  className="font-display w-full inline-flex items-center justify-center gap-1 rounded-lg bg-orange-600 px-2.5 py-1.5 text-[11px] font-bold text-white hover:bg-orange-700 transition-colors cursor-pointer"
                                 >
                                   <Ticket
                                     className="h-3 w-3"
@@ -491,11 +491,11 @@ export default function LocationPicker({
                           href={waUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="w-full inline-flex items-center justify-center gap-1.5 rounded-lg border border-stone-200/90 bg-white px-3 py-1.5 text-[11px] font-semibold text-stone-700 hover:border-stone-300 hover:bg-stone-50 transition-colors"
+                          className="w-full inline-flex items-center justify-center gap-1.5 rounded-lg border border-stone-200/90 bg-white px-3 py-1.5 text-[11px] font-semibold text-stone-700 hover:border-orange-300 hover:bg-orange-50/40 transition-colors"
                           style={{ color: '#1C1917', textDecoration: 'none' }}
                         >
                           <MessageCircle
-                            className="h-3.5 w-3.5 text-emerald-600"
+                            className="h-3.5 w-3.5 text-orange-600"
                             strokeWidth={1.75}
                           />
                           Contactar por WhatsApp
@@ -514,8 +514,8 @@ export default function LocationPicker({
           <div className="pointer-events-auto absolute bottom-2.5 left-2.5 z-[400] rounded-xl border border-stone-200/90 bg-white/95 px-3 py-2 shadow-sm backdrop-blur-xs space-y-1.5 text-[11px]">
             <div className="flex items-center gap-2">
               <span className="relative flex h-3.5 w-3.5 items-center justify-center">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75" />
-                <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-amber-500 border border-white" />
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-orange-400 opacity-75" />
+                <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-orange-500 border border-white" />
               </span>
               <span className="font-semibold text-stone-800">
                 Local con Oferta Flash

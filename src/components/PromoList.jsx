@@ -246,7 +246,7 @@ export default function PromoList({
         <div>
           <h2 className="font-display text-xl font-bold text-stone-900 flex items-center gap-2">
             <ShoppingBag
-              className="h-5 w-5 text-emerald-600"
+              className="h-5 w-5 text-orange-600"
               strokeWidth={1.75}
             />
             Promociones Cercanas en tu Barrio
@@ -288,7 +288,7 @@ export default function PromoList({
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
             placeholder="Buscar por oferta o nombre del comercio..."
-            className="w-full rounded-xl border border-stone-200/90 bg-[#FAFAF9] pl-9 pr-3 py-2 text-xs sm:text-sm text-stone-900 placeholder:text-stone-400 focus:border-emerald-600 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600/15 transition-all duration-200"
+            className="w-full rounded-xl border border-stone-200/90 bg-[#FAFAF9] pl-9 pr-3 py-2 text-xs sm:text-sm text-stone-900 placeholder:text-stone-400 focus:border-orange-600 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all duration-200"
           />
         </div>
 
@@ -302,7 +302,7 @@ export default function PromoList({
                 onClick={() => setRubroSeleccionado(f.value)}
                 className={`rounded-full px-3 py-1 text-xs font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer ${
                   active
-                    ? 'bg-emerald-600 text-white shadow-xs'
+                    ? 'bg-orange-600 text-white shadow-xs'
                     : 'bg-stone-100 text-stone-600 hover:bg-stone-200/70 hover:text-stone-900'
                 }`}
               >
@@ -413,7 +413,7 @@ export default function PromoList({
             return (
               <article
                 key={promoId || index}
-                className="relative flex flex-col justify-between overflow-hidden rounded-2xl border border-stone-200/80 bg-white shadow-sm hover:border-stone-300 transition-all duration-200"
+                className="relative flex flex-col justify-between overflow-hidden rounded-2xl border border-stone-200/80 bg-white shadow-sm hover:border-orange-300 transition-all duration-200"
               >
                 <div>
                   <div className="relative">
@@ -434,7 +434,7 @@ export default function PromoList({
 
                     {/* Badge Oferta Flash (sin emojis, icono vectorial) */}
                     {promo.es_flash && (
-                      <span className="absolute top-3 left-3 inline-flex items-center gap-1 rounded-full bg-amber-600 px-2.5 py-1 text-[11px] font-bold tracking-wide text-white shadow-xs">
+                      <span className="absolute top-3 left-3 inline-flex items-center gap-1 rounded-full bg-orange-600 px-2.5 py-1 text-[11px] font-bold tracking-wide text-white shadow-xs">
                         <Zap className="h-3.5 w-3.5" strokeWidth={1.75} />
                         FLASH
                       </span>
@@ -476,7 +476,7 @@ export default function PromoList({
 
                   <div className="p-4 space-y-2.5">
                     <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200/60 px-2.5 py-0.5 font-medium text-emerald-700 capitalize">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-orange-50 border border-orange-200/60 px-2.5 py-0.5 font-medium text-orange-700 capitalize">
                         <Tag className="h-3.5 w-3.5" strokeWidth={1.75} />
                         {String(comercioRubro).replace('_', ' ')}
                       </span>
@@ -513,7 +513,7 @@ export default function PromoList({
                               {pricing.oldPrice}
                             </span>
                           )}
-                          <span className="font-display text-base font-extrabold text-emerald-700">
+                          <span className="font-display text-base font-extrabold text-orange-600">
                             {pricing.finalPrice}
                           </span>
                         </div>
@@ -562,7 +562,7 @@ export default function PromoList({
                       type="button"
                       disabled={sinStock}
                       onClick={() => onOpenCanjeModal(promo)}
-                      className="font-display flex w-full items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-emerald-700 disabled:opacity-50 transition-all duration-200 cursor-pointer"
+                      className="font-display flex w-full items-center justify-center gap-1.5 rounded-xl bg-orange-600 px-3 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-orange-700 disabled:opacity-50 transition-all duration-200 cursor-pointer"
                     >
                       <Ticket className="h-4 w-4" strokeWidth={1.75} />
                       {sinStock ? 'Sin stock' : 'Canjear en local'}
@@ -575,10 +575,10 @@ export default function PromoList({
                       target="_blank"
                       rel="noopener noreferrer"
                       onClick={() => handleWhatsAppClick(promoId)}
-                      className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-stone-200/90 bg-white px-3 py-2.5 text-xs font-semibold text-stone-700 hover:border-stone-300 hover:bg-stone-50 transition-all duration-200"
+                      className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-stone-200/90 bg-white px-3 py-2.5 text-xs font-semibold text-stone-700 hover:border-orange-300 hover:bg-orange-50/40 transition-all duration-200"
                     >
                       <MessageCircle
-                        className="h-4 w-4 text-emerald-600"
+                        className="h-4 w-4 text-orange-600"
                         strokeWidth={1.75}
                       />
                       WhatsApp

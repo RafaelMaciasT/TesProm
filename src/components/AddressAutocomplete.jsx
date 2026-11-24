@@ -182,11 +182,11 @@ export default function AddressAutocomplete({
           }}
           placeholder={placeholder}
           autoComplete="off"
-          className="w-full rounded-xl border border-stone-200/90 bg-white pl-9 pr-9 py-2 text-sm text-stone-900 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/15 transition-all duration-200"
+          className="w-full rounded-xl border border-stone-200/90 bg-white pl-9 pr-9 py-2 text-sm text-stone-900 focus:border-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all duration-200"
         />
         {loading ? (
           <Loader2
-            className="h-4 w-4 text-emerald-600 animate-spin absolute right-3 top-1/2 -translate-y-1/2"
+            className="h-4 w-4 text-orange-600 animate-spin absolute right-3 top-1/2 -translate-y-1/2"
             strokeWidth={1.75}
           />
         ) : (
@@ -212,10 +212,10 @@ export default function AddressAutocomplete({
                 <button
                   type="button"
                   onClick={() => handleSelect(item)}
-                  className="w-full flex items-start gap-2.5 px-3.5 py-2.5 text-left hover:bg-emerald-50/60 transition-colors duration-150 cursor-pointer"
+                  className="w-full flex items-start gap-2.5 px-3.5 py-2.5 text-left hover:bg-orange-50/70 transition-colors duration-150 cursor-pointer"
                 >
                   <MapPin
-                    className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5"
+                    className="h-4 w-4 text-orange-600 shrink-0 mt-0.5"
                     strokeWidth={1.75}
                   />
                   <div className="min-w-0 flex-1">

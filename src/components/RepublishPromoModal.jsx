@@ -202,7 +202,7 @@ export default function RepublishPromoModal({
       <div className="relative my-8 w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-sm border border-stone-200/80">
         <div className="flex items-center justify-between border-b border-stone-200/80 px-6 py-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200/60">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-orange-50 text-orange-700 border border-orange-200/60">
               <RotateCcw className="h-5 w-5" strokeWidth={1.75} />
             </div>
             <div>
@@ -248,7 +248,7 @@ export default function RepublishPromoModal({
                 className="h-14 w-14 rounded-lg object-cover border border-stone-200/80 shrink-0"
               />
             ) : (
-              <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200/60 shrink-0">
+              <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-orange-50 text-orange-700 border border-orange-200/60 shrink-0">
                 <Sparkles className="h-5 w-5" strokeWidth={1.75} />
               </div>
             )}
@@ -276,7 +276,7 @@ export default function RepublishPromoModal({
                 onClick={() => setEsFlash(false)}
                 className={`flex items-start gap-2.5 rounded-xl border p-3 text-left transition-all duration-200 cursor-pointer ${
                   !esFlash
-                    ? 'border-emerald-600 bg-emerald-50/60 text-stone-900 ring-2 ring-emerald-600/15'
+                    ? 'border-orange-600 bg-orange-50/60 text-stone-900 ring-2 ring-orange-500/20'
                     : 'border-stone-200/80 bg-white text-stone-700 hover:border-stone-300 hover:bg-stone-50'
                 }`}
               >
@@ -285,12 +285,12 @@ export default function RepublishPromoModal({
                   name="republishPromoType"
                   checked={!esFlash}
                   onChange={() => setEsFlash(false)}
-                  className="mt-1 accent-emerald-600"
+                  className="mt-1 accent-orange-600"
                 />
                 <div>
                   <span className="font-display flex items-center gap-1.5 text-xs sm:text-sm font-bold text-stone-900">
                     <Calendar
-                      className="h-4 w-4 text-emerald-600"
+                      className="h-4 w-4 text-orange-600"
                       strokeWidth={1.75}
                     />
                     Promoción Estándar
@@ -366,7 +366,7 @@ export default function RepublishPromoModal({
             <div className="rounded-xl border border-stone-200/80 bg-stone-50/70 p-3.5 space-y-1.5">
               <label className="block text-xs font-semibold text-stone-700 flex items-center gap-1.5">
                 <Calendar
-                  className="h-4 w-4 text-emerald-600"
+                  className="h-4 w-4 text-orange-600"
                   strokeWidth={1.75}
                 />
                 Fecha y hora de vencimiento (mínimo 1 día) *
@@ -377,7 +377,7 @@ export default function RepublishPromoModal({
                 min={minStandardStr}
                 value={standardDateTime}
                 onChange={(e) => setStandardDateTime(e.target.value)}
-                className="w-full rounded-xl border border-stone-200/90 bg-white px-3 py-2 text-sm text-stone-900 tabular-nums focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/15 transition-all duration-200"
+                className="w-full rounded-xl border border-stone-200/90 bg-white px-3 py-2 text-sm text-stone-900 tabular-nums focus:border-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all duration-200"
               />
             </div>
           )}
@@ -391,7 +391,7 @@ export default function RepublishPromoModal({
               required
               value={titulo}
               onChange={(e) => setTitulo(e.target.value)}
-              className="w-full rounded-xl border border-stone-200/90 bg-white px-3 py-2 text-sm text-stone-900 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/15 transition-all duration-200"
+              className="w-full rounded-xl border border-stone-200/90 bg-white px-3 py-2 text-sm text-stone-900 focus:border-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all duration-200"
             />
           </div>
 
@@ -403,7 +403,7 @@ export default function RepublishPromoModal({
               rows={2}
               value={descripcion}
               onChange={(e) => setDescripcion(e.target.value)}
-              className="w-full rounded-xl border border-stone-200/90 bg-white px-3 py-2 text-sm text-stone-900 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/15 transition-all duration-200"
+              className="w-full rounded-xl border border-stone-200/90 bg-white px-3 py-2 text-sm text-stone-900 focus:border-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all duration-200"
             />
           </div>
 
@@ -421,7 +421,7 @@ export default function RepublishPromoModal({
               className={`font-display inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-bold text-white shadow-sm disabled:opacity-60 transition-all duration-200 cursor-pointer ${
                 esFlash
                   ? 'bg-amber-600 hover:bg-amber-700'
-                  : 'bg-emerald-600 hover:bg-emerald-700'
+                  : 'bg-orange-600 hover:bg-orange-700'
               }`}
             >
               {loading ? (

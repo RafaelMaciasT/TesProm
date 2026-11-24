@@ -244,14 +244,14 @@ export default function PanelCanjesYMetricas({
             100,
             Math.round((totalPinsEmitidos / maxBase) * 100)
           ),
-          barColor: 'bg-emerald-500',
+          barColor: 'bg-orange-500',
         },
         {
           id: 'canjes',
           label: '4. Conversiones Efectivas (Canjes Validados en Local)',
           value: canjesValidados,
           percent: Math.min(100, Math.round((canjesValidados / maxBase) * 100)),
-          barColor: 'bg-emerald-600',
+          barColor: 'bg-orange-600',
         },
       ],
     };
@@ -271,7 +271,7 @@ export default function PanelCanjesYMetricas({
       <div className="rounded-2xl border border-stone-200/80 bg-white p-5 shadow-sm space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-stone-200/80 pb-3.5">
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200/60">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-orange-50 text-orange-700 border border-orange-200/60">
               <KeyRound className="h-5 w-5" strokeWidth={1.75} />
             </div>
             <div>
@@ -315,14 +315,14 @@ export default function PanelCanjesYMetricas({
               }
               placeholder="EJ: K7M9P2"
               aria-label="Código PIN de 6 caracteres"
-              className="w-full rounded-xl border border-stone-300 bg-[#FAFAF9] px-4 py-2.5 text-center font-mono text-lg font-bold tracking-[0.35em] text-stone-900 uppercase tabular-nums focus:border-emerald-600 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600/15 transition-all duration-200"
+              className="w-full rounded-xl border border-stone-300 bg-[#FAFAF9] px-4 py-2.5 text-center font-mono text-lg font-bold tracking-[0.35em] text-stone-900 uppercase tabular-nums focus:border-orange-600 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all duration-200"
             />
           </div>
 
           <button
             type="submit"
             disabled={validating || pinInput.trim().length !== 6}
-            className="font-display inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-6 py-3 text-xs sm:text-sm font-bold text-white shadow-sm hover:bg-emerald-700 disabled:opacity-50 transition-all duration-200 cursor-pointer"
+            className="font-display inline-flex items-center justify-center gap-2 rounded-xl bg-orange-600 px-6 py-3 text-xs sm:text-sm font-bold text-white shadow-sm hover:bg-orange-700 disabled:opacity-50 transition-all duration-200 cursor-pointer"
           >
             {validating ? (
               <>
@@ -343,14 +343,14 @@ export default function PanelCanjesYMetricas({
           <div
             className={`flex items-start justify-between gap-3 rounded-xl border p-4 text-xs sm:text-sm ${
               validationResult.ok
-                ? 'border-emerald-200/80 bg-emerald-50 text-emerald-900'
+                ? 'border-orange-200/80 bg-orange-50 text-orange-950'
                 : 'border-red-200/80 bg-red-50 text-red-800'
             }`}
           >
             <div className="flex items-start gap-2.5">
               {validationResult.ok ? (
                 <CheckCircle2
-                  className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5"
+                  className="h-5 w-5 text-orange-600 shrink-0 mt-0.5"
                   strokeWidth={1.75}
                 />
               ) : (
@@ -362,7 +362,7 @@ export default function PanelCanjesYMetricas({
               <div className="space-y-1">
                 <p className="font-bold">{validationResult.mensaje}</p>
                 {validationResult.ok && validationResult.promocion_titulo && (
-                  <p className="text-xs text-emerald-800">
+                  <p className="text-xs text-orange-900">
                     Oferta aplicada:{' '}
                     <strong>{validationResult.promocion_titulo}</strong> (PIN:{' '}
                     <code className="font-mono font-bold tabular-nums">
@@ -450,7 +450,7 @@ export default function PanelCanjesYMetricas({
           <div className="rounded-xl border border-stone-200/80 bg-[#FAFAF9] p-3.5 space-y-1">
             <span className="flex items-center gap-1.5 text-[11px] font-semibold text-stone-600">
               <MessageCircle
-                className="h-4 w-4 text-emerald-600"
+                className="h-4 w-4 text-orange-600"
                 strokeWidth={1.75}
               />
               Pedidos WhatsApp
@@ -460,15 +460,15 @@ export default function PanelCanjesYMetricas({
             </p>
           </div>
 
-          <div className="rounded-xl border border-emerald-200/60 bg-emerald-50/50 p-3.5 space-y-1">
-            <span className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-800">
+          <div className="rounded-xl border border-orange-200/60 bg-orange-50/50 p-3.5 space-y-1">
+            <span className="flex items-center gap-1.5 text-[11px] font-semibold text-orange-800">
               <TicketCheck
-                className="h-4 w-4 text-emerald-600"
+                className="h-4 w-4 text-orange-600"
                 strokeWidth={1.75}
               />
               Canjes Validados
             </span>
-            <p className="font-display text-xl font-extrabold text-emerald-800 tabular-nums">
+            <p className="font-display text-xl font-extrabold text-orange-800 tabular-nums">
               {metrics.canjesValidados}
             </p>
           </div>
@@ -483,15 +483,15 @@ export default function PanelCanjesYMetricas({
             </p>
           </div>
 
-          <div className="col-span-2 sm:col-span-1 rounded-xl border border-emerald-200/60 bg-emerald-50/40 p-3.5 space-y-1">
-            <span className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-800">
+          <div className="col-span-2 sm:col-span-1 rounded-xl border border-orange-200/60 bg-orange-50/40 p-3.5 space-y-1">
+            <span className="flex items-center gap-1.5 text-[11px] font-semibold text-orange-800">
               <TrendingUp
-                className="h-4 w-4 text-emerald-600"
+                className="h-4 w-4 text-orange-600"
                 strokeWidth={1.75}
               />
               Tasa Conversión
             </span>
-            <p className="font-display text-xl font-extrabold text-emerald-900 tabular-nums">
+            <p className="font-display text-xl font-extrabold text-orange-900 tabular-nums">
               {metrics.tasaConversion}%
             </p>
           </div>
@@ -567,7 +567,7 @@ export default function PanelCanjesYMetricas({
                         })}
                       </span>
                       {st === 'canjeado' ? (
-                        <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-700 border border-emerald-200/60">
+                        <span className="rounded-full bg-orange-50 px-2.5 py-0.5 text-[11px] font-semibold text-orange-700 border border-orange-200/60">
                           Canjeado
                         </span>
                       ) : st === 'pendiente' ? (

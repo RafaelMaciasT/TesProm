@@ -151,7 +151,7 @@ export default function RegisterBusinessModal({
       <div className="relative my-8 w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-sm border border-stone-200/80">
         <div className="flex items-center justify-between border-b border-stone-200/80 px-6 py-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200/60">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-orange-50 text-orange-700 border border-orange-200/60">
               <Store className="h-5 w-5" strokeWidth={1.75} />
             </div>
             <div>
@@ -189,9 +189,9 @@ export default function RegisterBusinessModal({
           )}
 
           {successMsg && (
-            <div className="flex items-start gap-2.5 rounded-xl bg-emerald-50 border border-emerald-200/60 p-3.5 text-xs text-emerald-800">
+            <div className="flex items-start gap-2.5 rounded-xl bg-orange-50 border border-orange-200/60 p-3.5 text-xs text-orange-800">
               <CheckCircle2
-                className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5"
+                className="h-4 w-4 text-orange-600 shrink-0 mt-0.5"
                 strokeWidth={1.75}
               />
               <span>{successMsg}</span>
@@ -214,7 +214,7 @@ export default function RegisterBusinessModal({
                   value={nombre}
                   onChange={(e) => setNombre(e.target.value)}
                   placeholder="Ej. Panadería San José"
-                  className="w-full rounded-xl border border-stone-200/90 bg-white pl-9 pr-3 py-2 text-sm text-stone-900 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/15 transition-all duration-200"
+                  className="w-full rounded-xl border border-stone-200/90 bg-white pl-9 pr-3 py-2 text-sm text-stone-900 focus:border-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all duration-200"
                 />
               </div>
             </div>
@@ -248,7 +248,7 @@ export default function RegisterBusinessModal({
                   value={telefonoWhatsapp}
                   onChange={(e) => setTelefonoWhatsapp(e.target.value)}
                   placeholder="Ej. 5491123456789"
-                  className="w-full rounded-xl border border-stone-200/90 bg-white pl-9 pr-3 py-2 text-sm text-stone-900 tabular-nums focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/15 transition-all duration-200"
+                  className="w-full rounded-xl border border-stone-200/90 bg-white pl-9 pr-3 py-2 text-sm text-stone-900 tabular-nums focus:border-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all duration-200"
                 />
               </div>
             </div>
@@ -265,7 +265,7 @@ export default function RegisterBusinessModal({
                 <select
                   value={rubro}
                   onChange={(e) => setRubro(e.target.value)}
-                  className="w-full rounded-xl border border-stone-200/90 pl-9 pr-3 py-2 text-sm bg-white text-stone-900 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/15 transition-all duration-200"
+                  className="w-full rounded-xl border border-stone-200/90 pl-9 pr-3 py-2 text-sm bg-white text-stone-900 focus:border-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all duration-200"
                 >
                   {RUBROS.map((cat) => (
                     <option key={cat.value} value={cat.value}>
@@ -296,7 +296,7 @@ export default function RegisterBusinessModal({
             <button
               type="submit"
               disabled={loading}
-              className="font-display flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-emerald-700 disabled:opacity-60 transition-all duration-200 cursor-pointer"
+              className="font-display flex items-center justify-center gap-2 rounded-xl bg-orange-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-orange-700 disabled:opacity-60 transition-all duration-200 cursor-pointer"
             >
               {loading ? (
                 <>

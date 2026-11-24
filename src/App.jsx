@@ -886,13 +886,13 @@ export default function App() {
               onClick={() => handleSelectTab('explorar')}
               className="flex items-center gap-3 cursor-pointer group"
             >
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-xs group-hover:bg-emerald-700 transition-all duration-200">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-orange-600 text-white shadow-xs group-hover:bg-orange-700 transition-all duration-200">
                 <MapPin className="h-5 w-5" strokeWidth={1.75} />
               </div>
               <div>
                 <h1 className="font-display text-lg font-extrabold tracking-tight text-stone-900 sm:text-xl leading-none">
-                  Ofert<span className="text-emerald-600">Ar</span>
-                  <span className="ml-1.5 inline-block h-1.5 w-1.5 rounded-full bg-emerald-600 align-middle" />
+                  Ofert<span className="text-orange-600">Ar</span>
+                  <span className="ml-1.5 inline-block h-1.5 w-1.5 rounded-full bg-orange-600 align-middle" />
                 </h1>
                 <p className="text-[11px] font-medium text-stone-500 mt-0.5">
                   Promociones barriales en tiempo real
@@ -906,7 +906,7 @@ export default function App() {
                 <button
                   type="button"
                   onClick={() => setIsAuthModalOpen(true)}
-                  className="font-display inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-xs sm:text-sm font-bold text-white shadow-sm hover:bg-emerald-700 transition-all duration-200 cursor-pointer"
+                  className="font-display inline-flex items-center gap-2 rounded-xl bg-orange-600 px-4 py-2 text-xs sm:text-sm font-bold text-white shadow-sm hover:bg-orange-700 transition-all duration-200 cursor-pointer"
                 >
                   <LogIn className="h-4 w-4" strokeWidth={1.75} />
                   Ingresar
@@ -917,7 +917,7 @@ export default function App() {
                     <button
                       type="button"
                       onClick={() => setIsRegisterBusinessOpen(true)}
-                      className="font-display inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs sm:text-sm font-bold text-white shadow-sm hover:bg-emerald-700 transition-all duration-200 cursor-pointer"
+                      className="font-display inline-flex items-center gap-1.5 rounded-xl bg-orange-600 px-3.5 py-2 text-xs sm:text-sm font-bold text-white shadow-sm hover:bg-orange-700 transition-all duration-200 cursor-pointer"
                     >
                       <Plus className="h-4 w-4" strokeWidth={1.75} />
                       Activar Negocio
@@ -927,10 +927,10 @@ export default function App() {
                   <button
                     type="button"
                     onClick={() => handleSelectTab('perfil')}
-                    className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs font-medium text-stone-700 border border-stone-200/80 shadow-2xs hover:border-stone-300 transition-all duration-200 cursor-pointer"
+                    className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs font-medium text-stone-700 border border-stone-200/80 shadow-2xs hover:border-orange-300 transition-all duration-200 cursor-pointer"
                   >
                     <User
-                      className="h-4 w-4 text-emerald-600"
+                      className="h-4 w-4 text-orange-600"
                       strokeWidth={1.75}
                     />
                     <span className="max-w-[160px] sm:max-w-none truncate">
@@ -952,7 +952,7 @@ export default function App() {
               onClick={() => handleSelectTab('explorar')}
               className={`font-display inline-flex items-center gap-2 border-b-2 px-4 py-2.5 text-xs sm:text-sm font-bold transition-all duration-200 cursor-pointer whitespace-nowrap ${
                 activeTab === 'explorar'
-                  ? 'border-emerald-600 text-emerald-700'
+                  ? 'border-orange-600 text-orange-600'
                   : 'border-transparent text-stone-600 hover:border-stone-300 hover:text-stone-900'
               }`}
             >
@@ -965,7 +965,7 @@ export default function App() {
               onClick={() => handleSelectTab('perfil')}
               className={`font-display inline-flex items-center gap-2 border-b-2 px-4 py-2.5 text-xs sm:text-sm font-bold transition-all duration-200 cursor-pointer whitespace-nowrap ${
                 activeTab === 'perfil'
-                  ? 'border-emerald-600 text-emerald-700'
+                  ? 'border-orange-600 text-orange-600'
                   : 'border-transparent text-stone-600 hover:border-stone-300 hover:text-stone-900'
               }`}
             >
@@ -988,13 +988,13 @@ export default function App() {
                 onClick={() => handleSelectTab('comercios')}
                 className={`font-display inline-flex items-center gap-2 border-b-2 px-4 py-2.5 text-xs sm:text-sm font-bold transition-all duration-200 cursor-pointer whitespace-nowrap ${
                   activeTab === 'comercios'
-                    ? 'border-emerald-600 text-emerald-700'
+                    ? 'border-orange-600 text-orange-600'
                     : 'border-transparent text-stone-600 hover:border-stone-300 hover:text-stone-900'
                 }`}
               >
                 <Store className="h-4 w-4" strokeWidth={1.75} />
                 Mis Comercios
-                <span className="ml-1 rounded-full bg-emerald-50 border border-emerald-200/60 px-2 py-0.5 text-xs font-bold text-emerald-700 tabular-nums">
+                <span className="ml-1 rounded-full bg-orange-50 border border-orange-200/60 px-2 py-0.5 text-xs font-bold text-orange-700 tabular-nums">
                   {comercios.length}
                 </span>
               </button>
@@ -1012,7 +1012,7 @@ export default function App() {
                 ? 'border-red-200/80 bg-red-50 text-red-800'
                 : feedbackBanner.type === 'info'
                   ? 'border-amber-200/80 bg-amber-50 text-amber-900'
-                  : 'border-emerald-200/80 bg-emerald-50 text-emerald-900'
+                  : 'border-orange-200/80 bg-orange-50 text-orange-950'
             }`}
           >
             <div className="flex items-center gap-2.5">
@@ -1023,7 +1023,7 @@ export default function App() {
                 />
               ) : (
                 <CheckCircle2
-                  className="h-5 w-5 text-emerald-600 shrink-0"
+                  className="h-5 w-5 text-orange-600 shrink-0"
                   strokeWidth={1.75}
                 />
               )}
@@ -1051,7 +1051,7 @@ export default function App() {
                   <div>
                     <h2 className="font-display text-lg font-bold text-stone-900 flex items-center gap-2">
                       <Compass
-                        className="h-5 w-5 text-emerald-600"
+                        className="h-5 w-5 text-orange-600"
                         strokeWidth={1.75}
                       />
                       Mapa y Radio de Búsqueda
@@ -1069,10 +1069,10 @@ export default function App() {
                     type="button"
                     onClick={requestUserGeolocation}
                     title="Centrar en mi ubicación actual"
-                    className="inline-flex items-center gap-1.5 rounded-xl border border-stone-200/80 bg-[#FAFAF9] px-3 py-1.5 text-xs font-semibold text-stone-700 hover:border-stone-300 hover:bg-stone-100 transition-all duration-200 cursor-pointer shrink-0"
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-stone-200/80 bg-[#FAFAF9] px-3 py-1.5 text-xs font-semibold text-stone-700 hover:border-orange-300 hover:bg-orange-50/50 transition-all duration-200 cursor-pointer shrink-0"
                   >
                     <LocateFixed
-                      className="h-4 w-4 text-emerald-600"
+                      className="h-4 w-4 text-orange-600"
                       strokeWidth={1.75}
                     />
                     Mi ubicación
@@ -1083,7 +1083,7 @@ export default function App() {
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-stone-700 flex items-center gap-1.5">
                     <Radio
-                      className="h-4 w-4 text-emerald-600"
+                      className="h-4 w-4 text-orange-600"
                       strokeWidth={1.75}
                     />
                     Radio de búsqueda:
@@ -1098,7 +1098,7 @@ export default function App() {
                           onClick={() => setSearchRadiusMeters(r.meters)}
                           className={`rounded-xl border py-1.5 text-xs font-semibold tabular-nums transition-all duration-200 cursor-pointer ${
                             active
-                              ? 'border-emerald-600 bg-emerald-50 text-emerald-700 ring-2 ring-emerald-600/15'
+                              ? 'border-orange-600 bg-orange-50 text-orange-700 ring-2 ring-orange-500/20'
                               : 'border-stone-200/80 bg-white text-stone-600 hover:border-stone-300 hover:bg-stone-50'
                           }`}
                         >
@@ -1145,7 +1145,7 @@ export default function App() {
           <div className="mx-auto max-w-4xl space-y-6">
             {!session ? (
               <div className="rounded-2xl border border-stone-200/80 bg-white p-8 text-center shadow-sm space-y-4">
-                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700 border border-emerald-200/60">
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-orange-50 text-orange-700 border border-orange-200/60">
                   <User className="h-6 w-6" strokeWidth={1.75} />
                 </div>
                 <div>
@@ -1159,7 +1159,7 @@ export default function App() {
                 <button
                   type="button"
                   onClick={() => setIsAuthModalOpen(true)}
-                  className="font-display inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-emerald-700 transition-all duration-200 cursor-pointer"
+                  className="font-display inline-flex items-center gap-2 rounded-xl bg-orange-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-orange-700 transition-all duration-200 cursor-pointer"
                 >
                   <LogIn className="h-4 w-4" strokeWidth={1.75} />
                   Ingresar / Crear Cuenta
@@ -1171,11 +1171,11 @@ export default function App() {
                 <div className="rounded-2xl border border-stone-200/80 bg-white p-6 sm:p-8 shadow-sm space-y-6">
                   <div className="flex flex-wrap items-center justify-between gap-4 border-b border-stone-200/80 pb-6">
                     <div className="flex items-center gap-4">
-                      <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-xs">
+                      <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-orange-600 text-white shadow-xs">
                         <User className="h-8 w-8" strokeWidth={1.75} />
                       </div>
                       <div>
-                        <span className="inline-flex items-center rounded-full bg-emerald-50 border border-emerald-200/60 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">
+                        <span className="inline-flex items-center rounded-full bg-orange-50 border border-orange-200/60 px-2.5 py-0.5 text-xs font-semibold text-orange-700">
                           Vecino / Cuenta activa
                         </span>
                         <h2 className="font-display text-xl font-bold text-stone-900 mt-1">
@@ -1201,7 +1201,7 @@ export default function App() {
                     <div className="rounded-xl border border-stone-200/80 bg-[#FAFAF9] p-4 space-y-1">
                       <span className="text-xs font-medium text-stone-600 flex items-center gap-1.5">
                         <User
-                          className="h-4 w-4 text-emerald-600"
+                          className="h-4 w-4 text-orange-600"
                           strokeWidth={1.75}
                         />
                         Nombre de perfil
@@ -1216,7 +1216,7 @@ export default function App() {
                     <div className="rounded-xl border border-stone-200/80 bg-[#FAFAF9] p-4 space-y-1">
                       <span className="text-xs font-medium text-stone-600 flex items-center gap-1.5">
                         <Mail
-                          className="h-4 w-4 text-emerald-600"
+                          className="h-4 w-4 text-orange-600"
                           strokeWidth={1.75}
                         />
                         Correo electrónico registrado
@@ -1229,7 +1229,7 @@ export default function App() {
                     <div className="rounded-xl border border-stone-200/80 bg-[#FAFAF9] p-4 space-y-1">
                       <span className="text-xs font-medium text-stone-600 flex items-center gap-1.5">
                         <Calendar
-                          className="h-4 w-4 text-emerald-600"
+                          className="h-4 w-4 text-orange-600"
                           strokeWidth={1.75}
                         />
                         Fecha de registro
@@ -1251,11 +1251,11 @@ export default function App() {
 
                   {/* Banner para activar negocio si aún no tiene local, o resumen comercial */}
                   {comercios.length === 0 ? (
-                    <div className="rounded-2xl border border-emerald-200/70 bg-emerald-50/40 p-5 flex flex-wrap items-center justify-between gap-4">
+                    <div className="rounded-2xl border border-orange-200/70 bg-orange-50/40 p-5 flex flex-wrap items-center justify-between gap-4">
                       <div className="space-y-1 max-w-lg">
                         <p className="font-display text-sm font-bold text-stone-900 flex items-center gap-1.5">
                           <Store
-                            className="h-4 w-4 text-emerald-600"
+                            className="h-4 w-4 text-orange-600"
                             strokeWidth={1.75}
                           />
                           ¿Tienes un comercio o emprendimiento en el barrio?
@@ -1268,7 +1268,7 @@ export default function App() {
                       <button
                         type="button"
                         onClick={() => setIsRegisterBusinessOpen(true)}
-                        className="font-display inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs sm:text-sm font-bold text-white shadow-sm hover:bg-emerald-700 transition-all duration-200 cursor-pointer"
+                        className="font-display inline-flex items-center gap-1.5 rounded-xl bg-orange-600 px-4 py-2.5 text-xs sm:text-sm font-bold text-white shadow-sm hover:bg-orange-700 transition-all duration-200 cursor-pointer"
                       >
                         <Plus className="h-4 w-4" strokeWidth={1.75} />
                         Activar mi Negocio / Registrar Comercio
@@ -1282,14 +1282,14 @@ export default function App() {
                         </p>
                         <p className="text-xs text-stone-600 tabular-nums">
                           Tienes{' '}
-                          <strong className="text-emerald-700">
+                          <strong className="text-orange-700">
                             {comercios.length}{' '}
                             {comercios.length === 1
                               ? 'local registrado'
                               : 'locales registrados'}
                           </strong>{' '}
                           y{' '}
-                          <strong className="text-emerald-700">
+                          <strong className="text-orange-700">
                             {totalPromosActivasUsuario}{' '}
                             {totalPromosActivasUsuario === 1
                               ? 'promoción activa'
@@ -1311,7 +1311,7 @@ export default function App() {
                         <button
                           type="button"
                           onClick={() => handleSelectTab('comercios')}
-                          className="font-display inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-700 transition-all duration-200 cursor-pointer"
+                          className="font-display inline-flex items-center gap-1.5 rounded-xl bg-orange-600 px-4 py-2 text-xs font-bold text-white hover:bg-orange-700 transition-all duration-200 cursor-pointer"
                         >
                           <Store className="h-4 w-4" strokeWidth={1.75} />
                           Ir a Mis Comercios
@@ -1346,7 +1346,7 @@ export default function App() {
                   {loadingFavoritos ? (
                     <div className="flex items-center justify-center py-10 text-stone-600 gap-2">
                       <Loader2
-                        className="h-5 w-5 animate-spin text-emerald-600"
+                        className="h-5 w-5 animate-spin text-orange-600"
                         strokeWidth={1.75}
                       />
                       <span className="text-sm">
@@ -1370,7 +1370,7 @@ export default function App() {
                       <button
                         type="button"
                         onClick={() => handleSelectTab('explorar')}
-                        className="font-display inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-700 transition-all duration-200 cursor-pointer"
+                        className="font-display inline-flex items-center gap-1.5 rounded-xl bg-orange-600 px-4 py-2 text-xs font-bold text-white hover:bg-orange-700 transition-all duration-200 cursor-pointer"
                       >
                         <Compass className="h-4 w-4" strokeWidth={1.75} />
                         Explorar promociones cercanas
@@ -1402,7 +1402,7 @@ export default function App() {
                             key={fav.promocion_id}
                             className={`flex flex-col justify-between overflow-hidden rounded-2xl border transition-all duration-200 ${
                               vigente
-                                ? 'border-stone-200/80 bg-white shadow-sm hover:border-stone-300'
+                                ? 'border-stone-200/80 bg-white shadow-sm hover:border-orange-300'
                                 : 'border-stone-200/80 bg-stone-100/70 opacity-85'
                             }`}
                           >
@@ -1426,7 +1426,7 @@ export default function App() {
                                 )}
 
                                 {promo.es_flash && vigente && (
-                                  <span className="absolute top-2.5 left-2.5 inline-flex items-center gap-1 rounded-full bg-amber-600 px-2.5 py-0.5 text-[10px] font-bold text-white shadow-xs">
+                                  <span className="absolute top-2.5 left-2.5 inline-flex items-center gap-1 rounded-full bg-orange-600 px-2.5 py-0.5 text-[10px] font-bold text-white shadow-xs">
                                     <Zap
                                       className="h-3 w-3"
                                       strokeWidth={1.75}
@@ -1459,7 +1459,7 @@ export default function App() {
 
                               <div className="p-4 space-y-2">
                                 <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-                                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200/60 px-2.5 py-0.5 font-medium text-emerald-700 capitalize">
+                                  <span className="inline-flex items-center gap-1 rounded-full bg-orange-50 border border-orange-200/60 px-2.5 py-0.5 font-medium text-orange-700 capitalize">
                                     <Tag
                                       className="h-3 w-3"
                                       strokeWidth={1.75}
@@ -1515,7 +1515,7 @@ export default function App() {
                                       comercios: comercio,
                                     })
                                   }
-                                  className="font-display flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-700 transition-all duration-200 cursor-pointer"
+                                  className="font-display flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-orange-600 px-3 py-2 text-xs font-bold text-white hover:bg-orange-700 transition-all duration-200 cursor-pointer"
                                 >
                                   <Ticket
                                     className="h-3.5 w-3.5"
@@ -1530,10 +1530,10 @@ export default function App() {
                                   href={waUrl}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="flex-1 flex items-center justify-center gap-1.5 rounded-xl border border-stone-200/90 bg-white px-3 py-2 text-xs font-semibold text-stone-700 hover:border-stone-300 hover:bg-stone-50 transition-all duration-200"
+                                  className="flex-1 flex items-center justify-center gap-1.5 rounded-xl border border-stone-200/90 bg-white px-3 py-2 text-xs font-semibold text-stone-700 hover:border-orange-300 hover:bg-orange-50/40 transition-all duration-200"
                                 >
                                   <MessageCircle
-                                    className="h-3.5 w-3.5 text-emerald-600"
+                                    className="h-3.5 w-3.5 text-orange-600"
                                     strokeWidth={1.75}
                                   />
                                   WhatsApp
@@ -1577,7 +1577,7 @@ export default function App() {
               <div>
                 <h2 className="font-display text-xl font-bold text-stone-900 flex items-center gap-2">
                   <Store
-                    className="h-5 w-5 text-emerald-600"
+                    className="h-5 w-5 text-orange-600"
                     strokeWidth={1.75}
                   />
                   Mis Comercios y Sucursales
@@ -1591,7 +1591,7 @@ export default function App() {
                 <button
                   type="button"
                   onClick={() => setIsRegisterBusinessOpen(true)}
-                  className="font-display inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs sm:text-sm font-bold text-white shadow-sm hover:bg-emerald-700 transition-all duration-200 cursor-pointer"
+                  className="font-display inline-flex items-center gap-1.5 rounded-xl bg-orange-600 px-4 py-2.5 text-xs sm:text-sm font-bold text-white shadow-sm hover:bg-orange-700 transition-all duration-200 cursor-pointer"
                 >
                   <Plus className="h-4 w-4" strokeWidth={1.75} />
                   Agregar otro local
@@ -1602,7 +1602,7 @@ export default function App() {
             {loadingComercios ? (
               <div className="flex items-center justify-center rounded-2xl border border-stone-200/80 bg-white p-12 text-stone-600 gap-2">
                 <Loader2
-                  className="h-5 w-5 animate-spin text-emerald-600"
+                  className="h-5 w-5 animate-spin text-orange-600"
                   strokeWidth={1.75}
                 />
                 <span className="text-sm font-medium">
@@ -1611,7 +1611,7 @@ export default function App() {
               </div>
             ) : comercios.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-stone-300 bg-white p-12 text-center space-y-4 shadow-sm">
-                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700 border border-emerald-200/60">
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-orange-50 text-orange-700 border border-orange-200/60">
                   <Store className="h-7 w-7" strokeWidth={1.75} />
                 </div>
                 <div className="max-w-md mx-auto">
@@ -1625,7 +1625,7 @@ export default function App() {
                 <button
                   type="button"
                   onClick={() => setIsRegisterBusinessOpen(true)}
-                  className="font-display inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-bold text-white shadow-sm hover:bg-emerald-700 transition-all duration-200 cursor-pointer"
+                  className="font-display inline-flex items-center gap-2 rounded-xl bg-orange-600 px-5 py-3 text-sm font-bold text-white shadow-sm hover:bg-orange-700 transition-all duration-200 cursor-pointer"
                 >
                   <Plus className="h-4 w-4" strokeWidth={1.75} />
                   Registrar mi primer local
@@ -1647,12 +1647,12 @@ export default function App() {
                   return (
                     <div
                       key={loc.id}
-                      className="overflow-hidden rounded-2xl border border-stone-200/80 bg-white shadow-sm hover:border-stone-300 transition-all duration-200"
+                      className="overflow-hidden rounded-2xl border border-stone-200/80 bg-white shadow-sm hover:border-orange-300 transition-all duration-200"
                     >
                       <div className="p-6 flex flex-wrap items-start justify-between gap-4">
                         <div className="space-y-2">
                           <div className="flex flex-wrap items-center gap-2 tabular-nums">
-                            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200/60 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 capitalize">
+                            <span className="inline-flex items-center gap-1 rounded-full bg-orange-50 border border-orange-200/60 px-2.5 py-0.5 text-xs font-semibold text-orange-700 capitalize">
                               <Tag className="h-3 w-3" strokeWidth={1.75} />
                               {loc.rubro?.replace('_', ' ') || 'Comercio'}
                             </span>
@@ -1711,10 +1711,10 @@ export default function App() {
                               selectSubTabForComercio(loc.id, 'metricas');
                               fetchPromosForComercio(loc.id);
                             }}
-                            className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-200/80 bg-emerald-50/70 px-3.5 py-2 text-xs font-semibold text-emerald-800 hover:bg-emerald-100/80 transition-all duration-200 cursor-pointer"
+                            className="inline-flex items-center gap-1.5 rounded-xl border border-orange-200/80 bg-orange-50/70 px-3.5 py-2 text-xs font-semibold text-orange-800 hover:bg-orange-100/80 transition-all duration-200 cursor-pointer"
                           >
                             <BarChart3
-                              className="h-4 w-4 text-emerald-700"
+                              className="h-4 w-4 text-orange-700"
                               strokeWidth={1.75}
                             />
                             Validar PIN / Métricas BI
@@ -1742,7 +1742,7 @@ export default function App() {
                           <button
                             type="button"
                             onClick={() => handleOpenNewPromo(loc.id)}
-                            className="font-display inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-bold text-white shadow-xs hover:bg-emerald-700 transition-all duration-200 cursor-pointer"
+                            className="font-display inline-flex items-center gap-1.5 rounded-xl bg-orange-600 px-3.5 py-2 text-xs font-bold text-white shadow-xs hover:bg-orange-700 transition-all duration-200 cursor-pointer"
                           >
                             <Plus className="h-4 w-4" strokeWidth={1.75} />
                             Nueva Promo
@@ -1762,7 +1762,7 @@ export default function App() {
                                 }
                                 className={`font-display inline-flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-xs font-bold transition-all duration-200 cursor-pointer ${
                                   currentSubTab === 'activas'
-                                    ? 'bg-emerald-600 text-white shadow-xs'
+                                    ? 'bg-orange-600 text-white shadow-xs'
                                     : 'bg-white text-stone-600 border border-stone-200/80 hover:border-stone-300 hover:text-stone-900'
                                 }`}
                               >
@@ -1798,7 +1798,7 @@ export default function App() {
                                 }
                                 className={`font-display inline-flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-xs font-bold transition-all duration-200 cursor-pointer ${
                                   currentSubTab === 'metricas'
-                                    ? 'bg-emerald-600 text-white shadow-xs'
+                                    ? 'bg-orange-600 text-white shadow-xs'
                                     : 'bg-white text-stone-600 border border-stone-200/80 hover:border-stone-300 hover:text-stone-900'
                                 }`}
                               >
@@ -1813,7 +1813,7 @@ export default function App() {
                             {loadingComercioPromosId === loc.id && (
                               <span className="inline-flex items-center gap-1 text-xs text-stone-500">
                                 <Loader2
-                                  className="h-3.5 w-3.5 animate-spin text-emerald-600"
+                                  className="h-3.5 w-3.5 animate-spin text-orange-600"
                                   strokeWidth={1.75}
                                 />
                                 Sincronizando...
@@ -1830,7 +1830,7 @@ export default function App() {
                                   <button
                                     type="button"
                                     onClick={() => handleOpenNewPromo(loc.id)}
-                                    className="font-semibold text-emerald-700 hover:underline cursor-pointer"
+                                    className="font-semibold text-orange-700 hover:underline cursor-pointer"
                                   >
                                     Publicar una nueva oferta
                                   </button>
@@ -1858,7 +1858,7 @@ export default function App() {
                                   {promosActivas.map((promo) => (
                                     <div
                                       key={promo.id}
-                                      className="flex items-center justify-between gap-3 rounded-xl border border-stone-200/80 bg-white p-3.5 shadow-xs"
+                                      className="flex items-center justify-between gap-3 rounded-xl border border-orange-200/80 bg-white p-3.5 shadow-xs"
                                     >
                                       <div className="flex items-center gap-3 min-w-0">
                                         {promo.imagen_url ? (
@@ -1868,7 +1868,7 @@ export default function App() {
                                             className="h-12 w-12 rounded-lg object-cover border border-stone-200/80 shrink-0"
                                           />
                                         ) : (
-                                          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200/60 shrink-0">
+                                          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-orange-50 text-orange-700 border border-orange-200/60 shrink-0">
                                             <Sparkles
                                               className="h-5 w-5"
                                               strokeWidth={1.75}
@@ -1878,7 +1878,7 @@ export default function App() {
 
                                         <div className="min-w-0">
                                           <div className="flex items-center gap-1.5">
-                                            <span className="inline-block rounded-full bg-emerald-50 border border-emerald-200/60 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
+                                            <span className="inline-block rounded-full bg-orange-50 border border-orange-200/60 px-2 py-0.5 text-[10px] font-bold text-orange-700">
                                               Activa
                                             </span>
                                             {promo.es_flash && (
@@ -2008,7 +2008,7 @@ export default function App() {
                                           onClick={() =>
                                             setPromoToRepublish(promo)
                                           }
-                                          className="font-display inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white shadow-2xs hover:bg-emerald-700 transition-all duration-200 cursor-pointer"
+                                          className="font-display inline-flex items-center gap-1.5 rounded-lg bg-orange-600 px-3 py-1.5 text-xs font-bold text-white shadow-2xs hover:bg-orange-700 transition-all duration-200 cursor-pointer"
                                         >
                                           <RotateCcw
                                             className="h-3.5 w-3.5"

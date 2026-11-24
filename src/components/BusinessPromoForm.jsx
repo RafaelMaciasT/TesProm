@@ -284,7 +284,7 @@ export default function BusinessPromoForm({
     >
       <div className="flex items-start justify-between border-b border-stone-200/80 pb-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200/60">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-orange-50 text-orange-700 border border-orange-200/60">
             <Sparkles className="h-5 w-5" strokeWidth={1.75} />
           </div>
           <div>
@@ -320,9 +320,9 @@ export default function BusinessPromoForm({
       )}
 
       {successMsg && (
-        <div className="flex items-start gap-3 rounded-xl bg-emerald-50 border border-emerald-200/60 p-4 text-sm text-emerald-800">
+        <div className="flex items-start gap-3 rounded-xl bg-orange-50 border border-orange-200/60 p-4 text-sm text-orange-800">
           <CheckCircle2
-            className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5"
+            className="h-5 w-5 text-orange-600 shrink-0 mt-0.5"
             strokeWidth={1.75}
           />
           <span>{successMsg}</span>
@@ -340,7 +340,7 @@ export default function BusinessPromoForm({
             onClick={() => setEsFlash(false)}
             className={`flex items-start gap-3 rounded-xl border p-3.5 text-left transition-all duration-200 cursor-pointer ${
               !esFlash
-                ? 'border-emerald-600 bg-emerald-50/60 text-stone-900 ring-2 ring-emerald-600/15'
+                ? 'border-orange-600 bg-orange-50/60 text-stone-900 ring-2 ring-orange-500/20'
                 : 'border-stone-200/80 bg-white text-stone-700 hover:border-stone-300 hover:bg-stone-50/60'
             }`}
           >
@@ -349,12 +349,12 @@ export default function BusinessPromoForm({
               name="promoType"
               checked={!esFlash}
               onChange={() => setEsFlash(false)}
-              className="mt-1 accent-emerald-600"
+              className="mt-1 accent-orange-600"
             />
             <div>
               <span className="font-display flex items-center gap-1.5 text-sm font-bold text-stone-900">
                 <Calendar
-                  className="h-4 w-4 text-emerald-600"
+                  className="h-4 w-4 text-orange-600"
                   strokeWidth={1.75}
                 />
                 Promoción Estándar
@@ -404,7 +404,7 @@ export default function BusinessPromoForm({
         </label>
         <div className="relative">
           <Store
-            className="h-4 w-4 text-emerald-600 absolute left-3 top-1/2 -translate-y-1/2"
+            className="h-4 w-4 text-orange-600 absolute left-3 top-1/2 -translate-y-1/2"
             strokeWidth={1.75}
           />
           <select
@@ -412,7 +412,7 @@ export default function BusinessPromoForm({
             required
             value={selectedComercioId}
             onChange={(e) => setSelectedComercioId(e.target.value)}
-            className="w-full rounded-xl border border-stone-200/90 pl-9 pr-3 py-2.5 text-sm bg-white font-medium text-stone-900 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/15 transition-all duration-200"
+            className="w-full rounded-xl border border-stone-200/90 pl-9 pr-3 py-2.5 text-sm bg-white font-medium text-stone-900 focus:border-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all duration-200"
           >
             <option value="" disabled>
               Selecciona uno de tus locales registrados...
@@ -437,7 +437,7 @@ export default function BusinessPromoForm({
             value={titulo}
             onChange={(e) => setTitulo(e.target.value)}
             placeholder="Ej. 2x1 en Medialunas recién horneadas"
-            className="w-full rounded-xl border border-stone-200/90 bg-white px-3 py-2.5 text-sm text-stone-900 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/15 transition-all duration-200"
+            className="w-full rounded-xl border border-stone-200/90 bg-white px-3 py-2.5 text-sm text-stone-900 focus:border-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all duration-200"
           />
         </div>
 
@@ -451,7 +451,7 @@ export default function BusinessPromoForm({
             value={stockDisponible}
             onChange={(e) => setStockDisponible(e.target.value)}
             placeholder="Ilimitado"
-            className="w-full rounded-xl border border-stone-200/90 bg-white px-3 py-2.5 text-sm text-stone-900 tabular-nums focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/15 transition-all duration-200"
+            className="w-full rounded-xl border border-stone-200/90 bg-white px-3 py-2.5 text-sm text-stone-900 tabular-nums focus:border-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all duration-200"
           />
         </div>
       </div>
@@ -466,7 +466,7 @@ export default function BusinessPromoForm({
           value={descripcion}
           onChange={(e) => setDescripcion(e.target.value)}
           placeholder="Ej. Válido llevando en efectivo o transferencia hasta agotar stock."
-          className="w-full rounded-xl border border-stone-200/90 bg-white px-3 py-2 text-sm text-stone-900 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/15 transition-all duration-200"
+          className="w-full rounded-xl border border-stone-200/90 bg-white px-3 py-2 text-sm text-stone-900 focus:border-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all duration-200"
         />
       </div>
 
@@ -506,7 +506,7 @@ export default function BusinessPromoForm({
         <div className="rounded-xl border border-stone-200/80 bg-stone-50/70 p-4 space-y-2">
           <label className="block text-xs font-semibold text-stone-800 flex items-center gap-1.5">
             <Calendar
-              className="h-4 w-4 text-emerald-600"
+              className="h-4 w-4 text-orange-600"
               strokeWidth={1.75}
             />
             Fecha y hora de finalización (mínimo 1 día) *
@@ -517,7 +517,7 @@ export default function BusinessPromoForm({
             min={minStandardStr}
             value={standardDateTime}
             onChange={(e) => setStandardDateTime(e.target.value)}
-            className="w-full rounded-xl border border-stone-200/90 bg-white px-3 py-2 text-sm text-stone-900 tabular-nums focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/15 transition-all duration-200"
+            className="w-full rounded-xl border border-stone-200/90 bg-white px-3 py-2 text-sm text-stone-900 tabular-nums focus:border-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all duration-200"
           />
           <p className="text-xs text-stone-600 flex items-center gap-1">
             <Clock className="h-3.5 w-3.5 text-stone-400" strokeWidth={1.75} />
@@ -532,7 +532,7 @@ export default function BusinessPromoForm({
           Imagen de la Promoción
         </label>
         <div className="flex items-center gap-4">
-          <label className="flex flex-1 cursor-pointer items-center justify-center rounded-xl border border-dashed border-stone-300 bg-stone-50/50 px-4 py-4 text-xs sm:text-sm text-stone-600 hover:border-emerald-600 hover:bg-emerald-50/30 transition-all duration-200">
+          <label className="flex flex-1 cursor-pointer items-center justify-center rounded-xl border border-dashed border-stone-300 bg-stone-50/50 px-4 py-4 text-xs sm:text-sm text-stone-600 hover:border-orange-600 hover:bg-orange-50/30 transition-all duration-200">
             <input
               type="file"
               accept="image/*"
@@ -571,7 +571,7 @@ export default function BusinessPromoForm({
           className={`font-display flex-1 flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-bold text-white shadow-sm disabled:opacity-60 transition-all duration-200 cursor-pointer ${
             esFlash
               ? 'bg-amber-600 hover:bg-amber-700'
-              : 'bg-emerald-600 hover:bg-emerald-700'
+              : 'bg-orange-600 hover:bg-orange-700'
           }`}
         >
           {isSubmitting ? (
