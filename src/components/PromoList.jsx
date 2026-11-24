@@ -127,6 +127,8 @@ export default function PromoList({
   togglingFavoriteId = null,
   onToggleFavorite,
   onOpenCanjeModal,
+  onOpenPromoDetail,
+  onOpenComercioProfile,
 }) {
   const [promociones, setPromociones] = useState([]);
   const [loading, setLoading] = useState(isSupabaseConfigured);
@@ -502,7 +504,12 @@ export default function PromoList({
                     </div>
 
                     <div className="flex items-baseline justify-between gap-2">
-                      <h3 className="font-display text-base font-bold text-stone-900 line-clamp-2">
+                      <h3
+                        onClick={() =>
+                          onOpenPromoDetail && onOpenPromoDetail(promo)
+                        }
+                        className="font-display text-base font-bold text-stone-900 line-clamp-2 hover:text-orange-600 transition-colors cursor-pointer"
+                      >
                         {promo.titulo}
                       </h3>
 
@@ -527,15 +534,32 @@ export default function PromoList({
                     )}
 
                     <div className="flex items-center justify-between gap-2 pt-1">
-                      <p className="flex items-center gap-1.5 text-xs text-stone-600 min-w-0">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          onOpenComercioProfile &&
+                          onOpenComercioProfile({
+                            id: promo.comercio_id || promo.comercios?.id,
+                            comercio_id:
+                              promo.comercio_id || promo.comercios?.id,
+                            nombre: comercioNombre,
+                            rubro: comercioRubro,
+                            telefono_whatsapp: comercioTelefono,
+                            ubicacion:
+                              promo.comercio_ubicacion ||
+                              promo.comercios?.ubicacion,
+                          })
+                        }
+                        className="flex items-center gap-1.5 text-xs text-stone-600 hover:text-orange-600 min-w-0 cursor-pointer text-left"
+                      >
                         <Store
-                          className="h-4 w-4 text-stone-400 shrink-0"
+                          className="h-4 w-4 text-orange-600 shrink-0"
                           strokeWidth={1.75}
                         />
-                        <span className="font-semibold text-stone-800 truncate">
+                        <span className="font-semibold text-stone-800 hover:text-orange-600 truncate underline-offset-2 hover:underline">
                           {comercioNombre}
                         </span>
-                      </p>
+                      </button>
 
                       {promo.stock_disponible != null && (
                         <span
@@ -555,7 +579,7 @@ export default function PromoList({
                   </div>
                 </div>
 
-                {/* Botones diferenciados: Canjear en local (primario sólido) y WhatsApp (secundario limpio con borde) */}
+                {/* Botones: Obtener Cupón QR (primario) y Ver Detalle / WhatsApp */}
                 <div className="border-t border-stone-100 p-4 pt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
                   {onOpenCanjeModal && promoId != null && (
                     <button
@@ -565,11 +589,19 @@ export default function PromoList({
                       className="font-display flex w-full items-center justify-center gap-1.5 rounded-xl bg-orange-600 px-3 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-orange-700 disabled:opacity-50 transition-all duration-200 cursor-pointer"
                     >
                       <Ticket className="h-4 w-4" strokeWidth={1.75} />
-                      {sinStock ? 'Sin stock' : 'Canjear en local'}
+                      {sinStock ? 'Sin stock' : 'Obtener Cupón QR'}
                     </button>
                   )}
 
-                  {waUrl ? (
+                  {onOpenPromoDetail ? (
+                    <button
+                      type="button"
+                      onClick={() => onOpenPromoDetail(promo)}
+                      className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-stone-200/90 bg-white px-3 py-2.5 text-xs font-semibold text-stone-700 hover:border-orange-300 hover:bg-orange-50/40 transition-all duration-200 cursor-pointer"
+                    >
+                      Ver detalle
+                    </button>
+                  ) : waUrl ? (
                     <a
                       href={waUrl}
                       target="_blank"

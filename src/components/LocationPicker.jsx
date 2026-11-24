@@ -303,6 +303,7 @@ export default function LocationPicker({
   markers = [],
   showLegend = false,
   onOpenCanjeModal,
+  onOpenComercioProfile,
   helperText = 'Haz clic en el mapa o arrastra el pin para fijar la ubicación exacta',
 }) {
   const center = position ? [position.lat, position.lng] : DEFAULT_CENTER;
@@ -398,13 +399,21 @@ export default function LocationPicker({
                         </span>
                       </div>
 
-                      <p className="font-display text-sm font-bold text-stone-900 flex items-center gap-1.5 pt-0.5">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          onOpenComercioProfile && onOpenComercioProfile(item)
+                        }
+                        className="font-display text-sm font-bold text-stone-900 hover:text-orange-600 flex items-center gap-1.5 pt-0.5 cursor-pointer text-left"
+                      >
                         <Store
                           className="h-3.5 w-3.5 text-orange-600 shrink-0"
                           strokeWidth={1.75}
                         />
-                        <span>{storeName}</span>
-                      </p>
+                        <span className="underline-offset-2 hover:underline">
+                          {storeName}
+                        </span>
+                      </button>
 
                       <p className="flex items-center gap-1 text-[11px] text-stone-600">
                         <MapPin
@@ -469,7 +478,7 @@ export default function LocationPicker({
                                     className="h-3 w-3"
                                     strokeWidth={1.75}
                                   />
-                                  Canjear PIN en local (5m)
+                                  Obtener Cupón QR
                                 </button>
                               )}
                             </div>

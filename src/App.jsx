@@ -31,6 +31,12 @@ import {
   Zap,
   Ticket,
   BarChart3,
+  KeyRound,
+  QrCode,
+  Edit3,
+  Save,
+  Copy,
+  Check,
 } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from './lib/supabase';
 import BusinessPromoForm from './components/BusinessPromoForm';
@@ -41,6 +47,7 @@ import RepublishPromoModal from './components/RepublishPromoModal';
 import ModalCanjeTemporal from './components/ModalCanjeTemporal';
 import PanelCanjesYMetricas from './components/PanelCanjesYMetricas';
 import LocationPicker from './components/LocationPicker';
+import MostradorView from './components/MostradorView';
 
 const OBELISCO_CABA = { lat: -34.6037, lng: -58.3816 };
 
@@ -186,8 +193,12 @@ function calculateDistanceMeters(lat1, lng1, lat2, lng2) {
 }
 
 export default function App() {
+  const [isMostradorRoute, setIsMostradorRoute] = useState(
+    () => window.location.pathname === '/mostrador'
+  );
   const [activeTab, setActiveTab] = useState('explorar'); // 'explorar' | 'perfil' | 'comercios'
   const [session, setSession] = useState(null);
+  const [userRol, setUserRol] = useState('consumidor');
   const [profileNameDb, setProfileNameDb] = useState('');
   const [comercios, setComercios] = useState([]);
   const [loadingComercios, setLoadingComercios] = useState(false);
@@ -205,14 +216,42 @@ export default function App() {
   const [isPromoModalOpen, setIsPromoModalOpen] = useState(false);
   const [promoModalComercioId, setPromoModalComercioId] = useState('');
 
-  // Modal de republicación de promoción vencida
+  // Modal de republicación / edición de promoción
   const [promoToRepublish, setPromoToRepublish] = useState(null);
 
   // Modal de confirmación de eliminación definitiva
   const [promoToDelete, setPromoToDelete] = useState(null);
 
-  // Modal de Canje Temporal (PIN de 5 minutos para el vecino)
+  // Modal de Cupón QR para el consumidor
   const [promoForCanje, setPromoForCanje] = useState(null);
+  const [pendingPromoAfterAuth, setPendingPromoAfterAuth] = useState(null);
+
+  // Modales de Detalle de Promoción y Perfil de Comercio (con registro en eventos_comercio)
+  const [selectedPromoDetail, setSelectedPromoDetail] = useState(null);
+  const [selectedComercioProfile, setSelectedComercioProfile] = useState(null);
+
+  // Edición de pin_mostrador por comercio en vista Jefe
+  const [pinInputsByComercio, setPinInputsByComercio] = useState({});
+  const [savingPinComercioId, setSavingPinComercioId] = useState(null);
+  const [copiedCodigoComercioId, setCopiedCodigoComercioId] = useState(null);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      setIsMostradorRoute(window.location.pathname === '/mostrador');
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  const navigateToMostrador = () => {
+    window.history.pushState({}, '', '/mostrador');
+    setIsMostradorRoute(true);
+  };
+
+  const navigateToHome = () => {
+    window.history.pushState({}, '', '/');
+    setIsMostradorRoute(false);
+  };
 
   // Control de qué sucursales tienen desplegadas sus promociones y qué sub-pestaña ('activas' | 'vencidas' | 'metricas')
   const [expandedComercios, setExpandedComercios] = useState({});
@@ -606,6 +645,7 @@ export default function App() {
   const fetchUserProfileName = useCallback(async (user) => {
     if (!user?.id || !isSupabaseConfigured || !supabase) {
       setProfileNameDb('');
+      setUserRol('consumidor');
       return;
     }
 
@@ -616,18 +656,24 @@ export default function App() {
       '';
     if (metaName) {
       setProfileNameDb(metaName);
-      return;
+    }
+
+    if (user.user_metadata?.rol) {
+      setUserRol(user.user_metadata.rol);
     }
 
     try {
       const { data } = await supabase
         .from('perfiles')
-        .select('nombre, full_name')
+        .select('*')
         .eq('id', user.id)
         .maybeSingle();
 
       if (data?.nombre || data?.full_name) {
         setProfileNameDb(data.nombre || data.full_name);
+      }
+      if (data?.rol) {
+        setUserRol(data.rol);
       }
     } catch {
       // Ignorar si no existe tabla perfiles adicional
@@ -704,6 +750,152 @@ export default function App() {
   const handleOpenNewPromo = (comercioId = '') => {
     setPromoModalComercioId(comercioId || comercios[0]?.id || '');
     setIsPromoModalOpen(true);
+  };
+
+  // Registro automático en public.eventos_comercio
+  const registrarEventoComercio = useCallback(
+    async (comercioId, tipo, promocionId = null) => {
+      if (!comercioId || !isSupabaseConfigured || !supabase) return;
+      try {
+        const payload = {
+          comercio_id: comercioId,
+          tipo,
+        };
+        if (promocionId) {
+          payload.promocion_id = promocionId;
+        }
+        const { error } = await supabase
+          .from('eventos_comercio')
+          .insert([payload]);
+        if (error && promocionId) {
+          await supabase
+            .from('eventos_comercio')
+            .insert([{ comercio_id: comercioId, tipo }]);
+        }
+      } catch {
+        // Ignorar errores silenciosamente
+      }
+    },
+    []
+  );
+
+  const handleOpenPromoDetail = useCallback(
+    (promo) => {
+      if (!promo) return;
+      setSelectedPromoDetail(promo);
+      const promoId = promo.id ?? promo.promo_id ?? promo.promocion_id ?? null;
+      const comId = promo.comercio_id || promo.comercios?.id || null;
+      if (comId) {
+        registrarEventoComercio(comId, 'vista_oferta', promoId);
+      }
+    },
+    [registrarEventoComercio]
+  );
+
+  const handleOpenComercioProfile = useCallback(
+    (comercio) => {
+      if (!comercio) return;
+      setSelectedComercioProfile(comercio);
+      const comId = comercio.comercio_id || comercio.id || null;
+      if (comId) {
+        registrarEventoComercio(comId, 'visita_local', null);
+      }
+    },
+    [registrarEventoComercio]
+  );
+
+  const handleRequestCouponQr = useCallback(
+    (promo) => {
+      if (!promo) return;
+      const promoId = promo.id ?? promo.promo_id ?? promo.promocion_id ?? null;
+      const comId = promo.comercio_id || promo.comercios?.id || null;
+      if (comId) {
+        registrarEventoComercio(comId, 'vista_oferta', promoId);
+      }
+      if (!session?.user?.id) {
+        setPendingPromoAfterAuth(promo);
+        setIsAuthModalOpen(true);
+        showTemporaryFeedback(
+          'info',
+          'Inicia sesión o regístrate rápido para obtener tu Cupón QR.'
+        );
+        return;
+      }
+      setPromoForCanje(promo);
+    },
+    [session, registrarEventoComercio]
+  );
+
+  const handleAuthSuccess = async (newSession, selectedRol) => {
+    setSession(newSession);
+    if (selectedRol) {
+      setUserRol(selectedRol);
+    }
+
+    if (pendingPromoAfterAuth && newSession?.user?.id) {
+      setPromoForCanje(pendingPromoAfterAuth);
+      setPendingPromoAfterAuth(null);
+      return;
+    }
+
+    if (newSession?.user?.id && selectedRol === 'jefe') {
+      const { data: userComs } = await supabase
+        .from('comercios')
+        .select('id')
+        .eq('user_id', newSession.user.id);
+      if (!userComs || userComs.length === 0) {
+        setIsRegisterBusinessOpen(true);
+      } else {
+        setActiveTab('comercios');
+      }
+    }
+  };
+
+  const handleSavePinMostrador = async (comercioId, rawPin) => {
+    if (!comercioId || !supabase) return;
+    const cleanPin = String(rawPin || '').replace(/\D/g, '').slice(0, 4);
+    if (cleanPin.length !== 4) {
+      showTemporaryFeedback(
+        'error',
+        'El PIN de mostrador debe tener 4 dígitos numéricos.'
+      );
+      return;
+    }
+    setSavingPinComercioId(comercioId);
+    try {
+      const { error } = await supabase
+        .from('comercios')
+        .update({ pin_mostrador: cleanPin })
+        .eq('id', comercioId);
+      if (error) throw error;
+      setComercios((prev) =>
+        prev.map((c) =>
+          c.id === comercioId ? { ...c, pin_mostrador: cleanPin } : c
+        )
+      );
+      showTemporaryFeedback(
+        'success',
+        'PIN de mostrador actualizado correctamente.'
+      );
+    } catch (err) {
+      showTemporaryFeedback(
+        'error',
+        err.message || 'No se pudo actualizar el PIN de mostrador.'
+      );
+    } finally {
+      setSavingPinComercioId(null);
+    }
+  };
+
+  const handleCopyCodigoLocal = async (comercioId, codigo) => {
+    if (!codigo) return;
+    try {
+      await navigator.clipboard.writeText(String(codigo));
+      setCopiedCodigoComercioId(comercioId);
+      setTimeout(() => setCopiedCodigoComercioId(null), 2000);
+    } catch {
+      // Ignorar
+    }
   };
 
   const handlePromoCreated = (nuevaPromo) => {
@@ -875,6 +1067,12 @@ export default function App() {
     return acc + activas;
   }, 0);
 
+  const isJefe = userRol === 'jefe' || comercios.length > 0;
+
+  if (isMostradorRoute) {
+    return <MostradorView onBackToHome={navigateToHome} />;
+  }
+
   return (
     <div className="min-h-full bg-[#FAFAF9] text-stone-900 flex flex-col">
       {/* Cabecera translúcida y Barra de Pestañas */}
@@ -902,6 +1100,15 @@ export default function App() {
 
             {/* Acciones rápidas derechas */}
             <div className="flex items-center gap-2.5 sm:gap-3">
+              <button
+                type="button"
+                onClick={navigateToMostrador}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-stone-200/90 bg-white px-3 py-1.5 text-xs font-semibold text-stone-600 hover:border-orange-300 hover:text-orange-700 transition-all duration-200 cursor-pointer"
+              >
+                <KeyRound className="h-3.5 w-3.5 text-orange-600" strokeWidth={1.75} />
+                Acceso Mostrador
+              </button>
+
               {!session ? (
                 <button
                   type="button"
@@ -913,14 +1120,14 @@ export default function App() {
                 </button>
               ) : (
                 <>
-                  {comercios.length === 0 && (
+                  {isJefe && comercios.length === 0 && (
                     <button
                       type="button"
                       onClick={() => setIsRegisterBusinessOpen(true)}
                       className="font-display inline-flex items-center gap-1.5 rounded-xl bg-orange-600 px-3.5 py-2 text-xs sm:text-sm font-bold text-white shadow-sm hover:bg-orange-700 transition-all duration-200 cursor-pointer"
                     >
                       <Plus className="h-4 w-4" strokeWidth={1.75} />
-                      Activar Negocio
+                      Crear Mi Local
                     </button>
                   )}
 
@@ -982,7 +1189,7 @@ export default function App() {
               )}
             </button>
 
-            {session && (
+            {session && isJefe && (
               <button
                 type="button"
                 onClick={() => handleSelectTab('comercios')}
@@ -993,7 +1200,7 @@ export default function App() {
                 }`}
               >
                 <Store className="h-4 w-4" strokeWidth={1.75} />
-                Mis Comercios
+                Panel Jefe / Mis Comercios
                 <span className="ml-1 rounded-full bg-orange-50 border border-orange-200/60 px-2 py-0.5 text-xs font-bold text-orange-700 tabular-nums">
                   {comercios.length}
                 </span>
@@ -1118,7 +1325,8 @@ export default function App() {
                   radiusMeters={searchRadiusMeters}
                   markers={mapMarkers}
                   showLegend={true}
-                  onOpenCanjeModal={(promo) => setPromoForCanje(promo)}
+                  onOpenCanjeModal={handleRequestCouponQr}
+                  onOpenComercioProfile={handleOpenComercioProfile}
                   helperText="Haz clic en el mapa o arrastra tu pin para cambiar el origen"
                 />
               </div>
@@ -1134,7 +1342,9 @@ export default function App() {
                 favoriteIds={favoriteIds}
                 togglingFavoriteId={togglingFavoriteId}
                 onToggleFavorite={handleToggleFavorite}
-                onOpenCanjeModal={(promo) => setPromoForCanje(promo)}
+                onOpenCanjeModal={handleRequestCouponQr}
+                onOpenPromoDetail={handleOpenPromoDetail}
+                onOpenComercioProfile={handleOpenComercioProfile}
               />
             </div>
           </div>
@@ -1510,18 +1720,18 @@ export default function App() {
                                 <button
                                   type="button"
                                   onClick={() =>
-                                    setPromoForCanje({
+                                    handleRequestCouponQr({
                                       ...promo,
                                       comercios: comercio,
                                     })
                                   }
                                   className="font-display flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-orange-600 px-3 py-2 text-xs font-bold text-white hover:bg-orange-700 transition-all duration-200 cursor-pointer"
                                 >
-                                  <Ticket
+                                  <QrCode
                                     className="h-3.5 w-3.5"
                                     strokeWidth={1.75}
                                   />
-                                  Canjear en local
+                                  Obtener Cupón QR
                                 </button>
                               )}
 
@@ -1697,6 +1907,100 @@ export default function App() {
                                 +{loc.telefono_whatsapp}
                               </span>
                             )}
+                          </div>
+
+                          {/* Credenciales Operativas de Mostrador (codigo_local y edición de pin_mostrador) */}
+                          <div className="mt-3 flex flex-wrap items-center gap-3 rounded-xl border border-orange-200/70 bg-orange-50/40 p-3 text-xs">
+                            <div className="flex items-center gap-2">
+                              <span className="font-semibold text-stone-700">
+                                Código Local:
+                              </span>
+                              <code className="rounded-lg bg-white px-2.5 py-1 font-mono font-extrabold text-orange-600 border border-orange-200/80 tabular-nums">
+                                {loc.codigo_local || loc.id}
+                              </code>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleCopyCodigoLocal(
+                                    loc.id,
+                                    loc.codigo_local || loc.id
+                                  )
+                                }
+                                className="inline-flex items-center gap-1 rounded-lg border border-stone-200 bg-white px-2 py-1 text-[11px] font-semibold text-stone-700 hover:border-orange-300 cursor-pointer"
+                              >
+                                {copiedCodigoComercioId === loc.id ? (
+                                  <>
+                                    <Check
+                                      className="h-3 w-3 text-orange-600"
+                                      strokeWidth={1.75}
+                                    />
+                                    Copiado
+                                  </>
+                                ) : (
+                                  <>
+                                    <Copy
+                                      className="h-3 w-3"
+                                      strokeWidth={1.75}
+                                    />
+                                    Copiar
+                                  </>
+                                )}
+                              </button>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              <span className="font-semibold text-stone-700 flex items-center gap-1">
+                                <KeyRound
+                                  className="h-3.5 w-3.5 text-orange-600"
+                                  strokeWidth={1.75}
+                                />
+                                PIN Mostrador:
+                              </span>
+                              <input
+                                type="text"
+                                inputMode="numeric"
+                                maxLength={4}
+                                value={
+                                  pinInputsByComercio[loc.id] !== undefined
+                                    ? pinInputsByComercio[loc.id]
+                                    : loc.pin_mostrador || ''
+                                }
+                                onChange={(e) => {
+                                  const val = e.target.value
+                                    .replace(/\D/g, '')
+                                    .slice(0, 4);
+                                  setPinInputsByComercio((prev) => ({
+                                    ...prev,
+                                    [loc.id]: val,
+                                  }));
+                                }}
+                                placeholder="4 dígitos"
+                                className="w-20 rounded-lg border border-stone-300 bg-white px-2.5 py-1 font-mono text-xs font-bold tracking-widest text-stone-900 tabular-nums focus:border-orange-600 focus:outline-none"
+                              />
+                              <button
+                                type="button"
+                                disabled={savingPinComercioId === loc.id}
+                                onClick={() =>
+                                  handleSavePinMostrador(
+                                    loc.id,
+                                    pinInputsByComercio[loc.id] !== undefined
+                                      ? pinInputsByComercio[loc.id]
+                                      : loc.pin_mostrador
+                                  )
+                                }
+                                className="inline-flex items-center gap-1 rounded-lg bg-orange-600 px-2.5 py-1 text-[11px] font-bold text-white hover:bg-orange-700 disabled:opacity-50 cursor-pointer"
+                              >
+                                {savingPinComercioId === loc.id ? (
+                                  <Loader2
+                                    className="h-3 w-3 animate-spin"
+                                    strokeWidth={1.75}
+                                  />
+                                ) : (
+                                  <Save className="h-3 w-3" strokeWidth={1.75} />
+                                )}
+                                Guardar PIN
+                              </button>
+                            </div>
                           </div>
                         </div>
 
@@ -1917,26 +2221,56 @@ export default function App() {
                                         </div>
                                       </div>
 
-                                      <button
-                                        type="button"
-                                        disabled={archivingPromoId === promo.id}
-                                        onClick={() => handleArchivePromo(promo)}
-                                        title="Pausar y archivar en el historial"
-                                        className="inline-flex items-center gap-1.5 rounded-lg border border-stone-200/90 bg-white px-2.5 py-1.5 text-xs font-semibold text-stone-700 hover:border-amber-300 hover:bg-amber-50 hover:text-amber-900 disabled:opacity-50 transition-all duration-200 shrink-0 cursor-pointer"
-                                      >
-                                        {archivingPromoId === promo.id ? (
-                                          <Loader2
-                                            className="h-3.5 w-3.5 animate-spin"
-                                            strokeWidth={1.75}
-                                          />
-                                        ) : (
-                                          <Archive
+                                      <div className="flex flex-wrap items-center gap-1.5 shrink-0">
+                                        <button
+                                          type="button"
+                                          onClick={() =>
+                                            setPromoToRepublish(promo)
+                                          }
+                                          title="Editar título, descripción o vigencia"
+                                          className="inline-flex items-center gap-1 rounded-lg border border-orange-200 bg-orange-50/70 px-2.5 py-1.5 text-xs font-semibold text-orange-800 hover:bg-orange-100 transition-all duration-200 cursor-pointer"
+                                        >
+                                          <Edit3
                                             className="h-3.5 w-3.5"
                                             strokeWidth={1.75}
                                           />
-                                        )}
-                                        Dar de baja
-                                      </button>
+                                          Editar
+                                        </button>
+
+                                        <button
+                                          type="button"
+                                          disabled={archivingPromoId === promo.id}
+                                          onClick={() => handleArchivePromo(promo)}
+                                          title="Pausar y archivar en el historial"
+                                          className="inline-flex items-center gap-1 rounded-lg border border-stone-200/90 bg-white px-2.5 py-1.5 text-xs font-semibold text-stone-700 hover:border-amber-300 hover:bg-amber-50 hover:text-amber-900 disabled:opacity-50 transition-all duration-200 cursor-pointer"
+                                        >
+                                          {archivingPromoId === promo.id ? (
+                                            <Loader2
+                                              className="h-3.5 w-3.5 animate-spin"
+                                              strokeWidth={1.75}
+                                            />
+                                          ) : (
+                                            <Archive
+                                              className="h-3.5 w-3.5"
+                                              strokeWidth={1.75}
+                                            />
+                                          )}
+                                          Pausar
+                                        </button>
+
+                                        <button
+                                          type="button"
+                                          disabled={deletingPromoId === promo.id}
+                                          onClick={() => setPromoToDelete(promo)}
+                                          title="Eliminar promoción"
+                                          className="inline-flex items-center gap-1 rounded-lg border border-stone-200/90 bg-white px-2 py-1.5 text-xs font-semibold text-stone-600 hover:border-red-200 hover:bg-red-50 hover:text-red-700 disabled:opacity-50 transition-all duration-200 cursor-pointer"
+                                        >
+                                          <Trash2
+                                            className="h-3.5 w-3.5"
+                                            strokeWidth={1.75}
+                                          />
+                                        </button>
+                                      </div>
                                     </div>
                                   ))}
                                 </div>
@@ -2060,7 +2394,7 @@ export default function App() {
         )}
       </main>
 
-      {/* Modal de Canje Temporal (PIN de 5 minutos para el vecino) */}
+      {/* Modal de Cupón QR (para el consumidor) */}
       <ModalCanjeTemporal
         key={
           promoForCanje?.id ||
@@ -2070,8 +2404,240 @@ export default function App() {
         }
         isOpen={Boolean(promoForCanje)}
         promo={promoForCanje}
+        session={session}
+        onRequireAuth={() => {
+          setPendingPromoAfterAuth(promoForCanje);
+          setPromoForCanje(null);
+          setIsAuthModalOpen(true);
+        }}
         onClose={() => setPromoForCanje(null)}
       />
+
+      {/* Modal de Detalle de Promoción (registra vista_oferta y permite Obtener Cupón QR) */}
+      {selectedPromoDetail && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/50 p-4 backdrop-blur-xs overflow-y-auto"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="relative my-8 w-full max-w-lg overflow-hidden rounded-2xl border border-stone-200/80 bg-white shadow-sm">
+            <div className="flex items-center justify-between border-b border-stone-200/80 bg-[#FAFAF9] px-6 py-4">
+              <div className="flex items-center gap-2.5">
+                <span className="inline-flex items-center gap-1 rounded-full bg-orange-50 border border-orange-200/60 px-2.5 py-0.5 text-xs font-semibold text-orange-700 capitalize">
+                  <Tag className="h-3.5 w-3.5" strokeWidth={1.75} />
+                  {String(
+                    selectedPromoDetail.comercio_rubro ||
+                      selectedPromoDetail.rubro ||
+                      selectedPromoDetail.comercios?.rubro ||
+                      'Comercio'
+                  ).replace('_', ' ')}
+                </span>
+                {selectedPromoDetail.es_flash && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-orange-600 px-2.5 py-0.5 text-[11px] font-bold text-white">
+                    <Zap className="h-3 w-3" strokeWidth={1.75} />
+                    FLASH
+                  </span>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedPromoDetail(null)}
+                className="rounded-lg p-1.5 text-stone-400 hover:bg-stone-200/60 hover:text-stone-700 cursor-pointer"
+              >
+                <X className="h-5 w-5" strokeWidth={1.75} />
+              </button>
+            </div>
+
+            {selectedPromoDetail.imagen_url && (
+              <img
+                src={selectedPromoDetail.imagen_url}
+                alt={selectedPromoDetail.titulo}
+                className="h-56 w-full object-cover border-b border-stone-100"
+              />
+            )}
+
+            <div className="p-6 space-y-4">
+              <div>
+                <h3 className="font-display text-xl font-bold text-stone-900">
+                  {selectedPromoDetail.titulo}
+                </h3>
+                {selectedPromoDetail.descripcion && (
+                  <p className="mt-2 text-sm text-stone-600 leading-relaxed">
+                    {selectedPromoDetail.descripcion}
+                  </p>
+                )}
+              </div>
+
+              <div className="rounded-xl border border-stone-200/80 bg-[#FAFAF9] p-3.5 flex flex-wrap items-center justify-between gap-2 text-xs">
+                <div className="flex items-center gap-2">
+                  <Store
+                    className="h-4 w-4 text-orange-600"
+                    strokeWidth={1.75}
+                  />
+                  <span className="font-bold text-stone-900">
+                    {selectedPromoDetail.comercio_nombre ||
+                      selectedPromoDetail.nombre_comercio ||
+                      selectedPromoDetail.comercios?.nombre ||
+                      'Comercio adherido'}
+                  </span>
+                </div>
+                {selectedPromoDetail.vence_el && (
+                  <span className="flex items-center gap-1 text-stone-600 tabular-nums">
+                    <Clock className="h-3.5 w-3.5 text-orange-600" strokeWidth={1.75} />
+                    Vence:{' '}
+                    {new Date(selectedPromoDetail.vence_el).toLocaleString(
+                      'es-AR',
+                      {
+                        day: '2-digit',
+                        month: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      }
+                    )}
+                  </span>
+                )}
+              </div>
+
+              <div className="flex flex-wrap items-center justify-end gap-3 pt-2 border-t border-stone-200/80">
+                <button
+                  type="button"
+                  onClick={() => setSelectedPromoDetail(null)}
+                  className="rounded-xl border border-stone-200/90 bg-white px-4 py-2.5 text-xs sm:text-sm font-semibold text-stone-600 hover:bg-stone-50 cursor-pointer"
+                >
+                  Cerrar
+                </button>
+                {isPromoActive(selectedPromoDetail) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const target = selectedPromoDetail;
+                      setSelectedPromoDetail(null);
+                      handleRequestCouponQr(target);
+                    }}
+                    className="font-display inline-flex items-center gap-2 rounded-xl bg-orange-600 px-5 py-2.5 text-xs sm:text-sm font-bold text-white shadow-sm hover:bg-orange-700 cursor-pointer"
+                  >
+                    <QrCode className="h-4 w-4" strokeWidth={1.75} />
+                    Obtener Cupón QR
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Perfil de Comercio (registra visita_local en eventos_comercio) */}
+      {selectedComercioProfile && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/50 p-4 backdrop-blur-xs overflow-y-auto"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="relative my-8 w-full max-w-lg overflow-hidden rounded-2xl border border-stone-200/80 bg-white shadow-sm">
+            <div className="flex items-center justify-between border-b border-stone-200/80 bg-[#FAFAF9] px-6 py-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-600 text-white">
+                  <Store className="h-5 w-5" strokeWidth={1.75} />
+                </div>
+                <div>
+                  <span className="inline-flex items-center gap-1 rounded-full bg-orange-50 border border-orange-200/60 px-2 py-0.5 text-[10px] font-semibold text-orange-700 capitalize">
+                    {String(
+                      selectedComercioProfile.rubro || 'Comercio'
+                    ).replace('_', ' ')}
+                  </span>
+                  <h3 className="font-display text-lg font-bold text-stone-900">
+                    {selectedComercioProfile.nombre}
+                  </h3>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedComercioProfile(null)}
+                className="rounded-lg p-1.5 text-stone-400 hover:bg-stone-200/60 hover:text-stone-700 cursor-pointer"
+              >
+                <X className="h-5 w-5" strokeWidth={1.75} />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <p className="flex items-center gap-2 text-xs text-stone-600">
+                <MapPin
+                  className="h-4 w-4 text-orange-600 shrink-0"
+                  strokeWidth={1.75}
+                />
+                {formatUbicacionDisplay(selectedComercioProfile)}
+              </p>
+
+              <div className="space-y-2">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-stone-500">
+                  Promociones Vigentes de este Local
+                </h4>
+                {(() => {
+                  const comId =
+                    selectedComercioProfile.comercio_id ||
+                    selectedComercioProfile.id;
+                  const promosDelLocal = nearbyPromos.filter(
+                    (p) =>
+                      String(p.comercio_id || p.comercios?.id) ===
+                        String(comId) ||
+                      (p.comercio_nombre || p.comercios?.nombre) ===
+                        selectedComercioProfile.nombre
+                  );
+                  if (promosDelLocal.length === 0) {
+                    return (
+                      <p className="rounded-xl border border-stone-200/80 bg-[#FAFAF9] p-4 text-xs text-stone-600 text-center">
+                        Consulta las ofertas activas de este comercio en el mapa.
+                      </p>
+                    );
+                  }
+                  return (
+                    <div className="space-y-2 max-h-60 overflow-y-auto">
+                      {promosDelLocal.map((p) => (
+                        <div
+                          key={p.id || p.titulo}
+                          className="flex items-center justify-between gap-3 rounded-xl border border-orange-200/80 bg-orange-50/40 p-3"
+                        >
+                          <div className="min-w-0">
+                            <p className="font-display text-xs sm:text-sm font-bold text-stone-900 truncate">
+                              {p.titulo}
+                            </p>
+                            {p.descripcion && (
+                              <p className="text-xs text-stone-600 line-clamp-1">
+                                {p.descripcion}
+                              </p>
+                            )}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedComercioProfile(null);
+                              handleRequestCouponQr(p);
+                            }}
+                            className="font-display shrink-0 inline-flex items-center gap-1 rounded-xl bg-orange-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-orange-700 cursor-pointer"
+                          >
+                            <QrCode className="h-3.5 w-3.5" strokeWidth={1.75} />
+                            Obtener Cupón QR
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </div>
+
+              <div className="flex justify-end pt-2 border-t border-stone-200/80">
+                <button
+                  type="button"
+                  onClick={() => setSelectedComercioProfile(null)}
+                  className="rounded-xl border border-stone-200/90 bg-white px-4 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-50 cursor-pointer"
+                >
+                  Cerrar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal accesible para publicar nueva promoción */}
       {isPromoModalOpen && (
@@ -2177,7 +2743,11 @@ export default function App() {
       {/* Modal de Autenticación */}
       <AuthModal
         isOpen={isAuthModalOpen}
-        onClose={() => setIsAuthModalOpen(false)}
+        onClose={() => {
+          setIsAuthModalOpen(false);
+          setPendingPromoAfterAuth(null);
+        }}
+        onAuthSuccess={handleAuthSuccess}
       />
 
       {/* Modal para Registrar / Agregar otro local */}
@@ -2189,8 +2759,21 @@ export default function App() {
       />
 
       <footer className="border-t border-stone-200/80 bg-white py-5 text-center text-xs text-stone-500">
-        <div className="mx-auto max-w-7xl px-4">
-          OfertAr &copy; {new Date().getFullYear()} — Plataforma de promociones barriales.
+        <div className="mx-auto max-w-7xl px-4 flex flex-wrap items-center justify-between gap-3">
+          <span>
+            OfertAr &copy; {new Date().getFullYear()} — Plataforma de promociones barriales.
+          </span>
+          <a
+            href="/mostrador"
+            onClick={(e) => {
+              e.preventDefault();
+              navigateToMostrador();
+            }}
+            className="inline-flex items-center gap-1.5 font-semibold text-stone-600 hover:text-orange-600 transition-colors cursor-pointer"
+          >
+            <KeyRound className="h-3.5 w-3.5 text-orange-600" strokeWidth={1.75} />
+            Acceso Mostrador
+          </a>
         </div>
       </footer>
     </div>

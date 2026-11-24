@@ -8,6 +8,9 @@ import {
   Loader2,
   AlertCircle,
   CheckCircle2,
+  KeyRound,
+  Copy,
+  Check,
 } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import LocationPicker from './LocationPicker';
@@ -35,10 +38,12 @@ export default function RegisterBusinessModal({
   const [direccion, setDireccion] = useState('');
   const [telefonoWhatsapp, setTelefonoWhatsapp] = useState('');
   const [rubro, setRubro] = useState(RUBROS[0].value);
+  const [pinMostrador, setPinMostrador] = useState('');
   const [location, setLocation] = useState(INITIAL_LOCATION);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
-  const [successMsg, setSuccessMsg] = useState(null);
+  const [createdBusiness, setCreatedBusiness] = useState(null);
+  const [copiedCode, setCopiedCode] = useState(false);
 
   if (!isOpen) return null;
 
@@ -47,9 +52,11 @@ export default function RegisterBusinessModal({
     setDireccion('');
     setTelefonoWhatsapp('');
     setRubro(RUBROS[0].value);
+    setPinMostrador('');
     setLocation(INITIAL_LOCATION);
     setErrorMsg(null);
-    setSuccessMsg(null);
+    setCreatedBusiness(null);
+    setCopiedCode(false);
   };
 
   const handleClose = () => {
@@ -65,16 +72,21 @@ export default function RegisterBusinessModal({
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMsg(null);
-    setSuccessMsg(null);
 
     if (!session?.user?.id) {
       setErrorMsg('Debes iniciar sesión para vincular un comercio.');
       return;
     }
 
-    if (!nombre.trim() || !telefonoWhatsapp.trim()) {
+    if (!nombre.trim()) {
+      setErrorMsg('Por favor ingresa el nombre del comercio.');
+      return;
+    }
+
+    const cleanPin = pinMostrador.replace(/\D/g, '').slice(0, 4);
+    if (cleanPin.length !== 4) {
       setErrorMsg(
-        'Por favor completa el nombre del comercio y el WhatsApp de contacto.'
+        'El PIN de mostrador inicial debe tener exactamente 4 dígitos numéricos.'
       );
       return;
     }
@@ -101,43 +113,80 @@ export default function RegisterBusinessModal({
         ? `${nombre.trim()} (${direccion.trim()})`
         : nombre.trim();
 
-      const { data, error } = await supabase
+      // Asegurar que el perfil tenga rol 'jefe'
+      await supabase
+        .from('perfiles')
+        .upsert({ id: session.user.id, rol: 'jefe' }, { onConflict: 'id' });
+
+      let insertResult = await supabase
         .from('comercios')
         .insert([
           {
             user_id: session.user.id,
             nombre: nombreFinal,
-            telefono_whatsapp: telefonoLimpio,
+            telefono_whatsapp: telefonoLimpio || null,
             rubro,
             ubicacion: ubicacionWKT,
+            pin_mostrador: cleanPin,
           },
         ])
         .select('*, promociones(*)')
         .single();
 
-      if (error) {
-        throw new Error(`No se pudo registrar el local: ${error.message}`);
+      if (insertResult.error) {
+        // Fallback por si telefono_whatsapp es requerido como string vacío
+        insertResult = await supabase
+          .from('comercios')
+          .insert([
+            {
+              user_id: session.user.id,
+              nombre: nombreFinal,
+              telefono_whatsapp: telefonoLimpio || '',
+              rubro,
+              ubicacion: ubicacionWKT,
+              pin_mostrador: cleanPin,
+            },
+          ])
+          .select('*, promociones(*)')
+          .single();
       }
 
-      setSuccessMsg('Local registrado con éxito.');
+      if (insertResult.error) {
+        throw new Error(
+          `No se pudo registrar el local: ${insertResult.error.message}`
+        );
+      }
+
+      const data = insertResult.data;
+      const nuevoComercio = {
+        ...data,
+        direccion_referencia: direccion.trim() || null,
+        promociones: data.promociones || [],
+      };
+
+      setCreatedBusiness(nuevoComercio);
 
       if (onBusinessRegistered) {
-        onBusinessRegistered({
-          ...data,
-          direccion_referencia: direccion.trim() || null,
-          promociones: data.promociones || [],
-        });
+        onBusinessRegistered(nuevoComercio);
       }
-
-      setTimeout(() => {
-        handleClose();
-      }, 600);
     } catch (err) {
       setErrorMsg(
         err.message || 'Ocurrió un error al registrar tu comercio.'
       );
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCopyCodigoLocal = async () => {
+    const code = createdBusiness?.codigo_local || createdBusiness?.id;
+    if (!code) return;
+    try {
+      await navigator.clipboard.writeText(String(code));
+      setCopiedCode(true);
+      setTimeout(() => setCopiedCode(false), 2000);
+    } catch {
+      // Ignorar si clipboard no está disponible
     }
   };
 
@@ -159,10 +208,14 @@ export default function RegisterBusinessModal({
                 id="modal-register-business-title"
                 className="font-display text-lg font-bold text-stone-900"
               >
-                Vincula tu Comercio / Sucursal
+                {createdBusiness
+                  ? '¡Comercio Creado con Éxito!'
+                  : 'Crear Local / Sucursal'}
               </h2>
               <p className="text-xs text-stone-600">
-                Busca la dirección de tu local o ajusta el marcador en el mapa
+                {createdBusiness
+                  ? 'Guarda los datos de acceso operativo para el mostrador'
+                  : 'Configura los datos, ubicación y PIN operativo de 4 dígitos'}
               </p>
             </div>
           </div>
@@ -177,65 +230,175 @@ export default function RegisterBusinessModal({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          {errorMsg && (
-            <div className="flex items-start gap-2.5 rounded-xl bg-red-50 border border-red-200/80 p-3.5 text-xs text-red-700">
-              <AlertCircle
-                className="h-4 w-4 text-red-600 shrink-0 mt-0.5"
-                strokeWidth={1.75}
-              />
-              <span>{errorMsg}</span>
-            </div>
-          )}
-
-          {successMsg && (
-            <div className="flex items-start gap-2.5 rounded-xl bg-orange-50 border border-orange-200/60 p-3.5 text-xs text-orange-800">
+        {createdBusiness ? (
+          <div className="p-6 space-y-5">
+            <div className="flex items-start gap-3 rounded-xl bg-orange-50 border border-orange-200/70 p-4 text-xs sm:text-sm text-orange-950">
               <CheckCircle2
-                className="h-4 w-4 text-orange-600 shrink-0 mt-0.5"
+                className="h-5 w-5 text-orange-600 shrink-0 mt-0.5"
                 strokeWidth={1.75}
               />
-              <span>{successMsg}</span>
+              <div>
+                <p className="font-bold">
+                  El local &ldquo;{createdBusiness.nombre}&rdquo; ya está activo.
+                </p>
+                <p className="mt-0.5 text-xs text-orange-900">
+                  Comparte el código del local y el PIN con tus empleados para que puedan validar cupones QR desde{' '}
+                  <code className="font-mono font-bold">/mostrador</code>.
+                </p>
+              </div>
             </div>
-          )}
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div>
-              <label className="block text-xs font-semibold text-stone-700 mb-1.5">
-                Nombre del Local *
-              </label>
-              <div className="relative">
-                <Store
-                  className="h-4 w-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2"
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="rounded-xl border border-orange-200/80 bg-[#FAFAF9] p-4 space-y-1.5">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-stone-500">
+                  Código del Local (codigo_local)
+                </span>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-mono text-lg font-extrabold text-orange-600 tabular-nums">
+                    {createdBusiness.codigo_local || createdBusiness.id}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleCopyCodigoLocal}
+                    className="inline-flex items-center gap-1 rounded-lg border border-stone-200 bg-white px-2.5 py-1 text-xs font-semibold text-stone-700 hover:border-orange-300 hover:bg-orange-50/40 cursor-pointer"
+                  >
+                    {copiedCode ? (
+                      <>
+                        <Check
+                          className="h-3.5 w-3.5 text-orange-600"
+                          strokeWidth={1.75}
+                        />
+                        Copiado
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="h-3.5 w-3.5" strokeWidth={1.75} />
+                        Copiar
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-stone-200/80 bg-[#FAFAF9] p-4 space-y-1.5">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-stone-500">
+                  PIN Operativo Mostrador
+                </span>
+                <p className="font-mono text-lg font-extrabold text-stone-900 tracking-widest tabular-nums">
+                  {createdBusiness.pin_mostrador || pinMostrador}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-2 border-t border-stone-200/80">
+              <button
+                type="button"
+                onClick={handleClose}
+                className="font-display inline-flex items-center justify-center rounded-xl bg-orange-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-orange-700 transition-all duration-200 cursor-pointer"
+              >
+                Ir a Mi Panel de Comercio
+              </button>
+            </div>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="p-6 space-y-4">
+            {errorMsg && (
+              <div className="flex items-start gap-2.5 rounded-xl bg-red-50 border border-red-200/80 p-3.5 text-xs text-red-700">
+                <AlertCircle
+                  className="h-4 w-4 text-red-600 shrink-0 mt-0.5"
                   strokeWidth={1.75}
                 />
-                <input
-                  type="text"
-                  required
-                  value={nombre}
-                  onChange={(e) => setNombre(e.target.value)}
-                  placeholder="Ej. Panadería San José"
-                  className="w-full rounded-xl border border-stone-200/90 bg-white pl-9 pr-3 py-2 text-sm text-stone-900 focus:border-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all duration-200"
+                <span>{errorMsg}</span>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label className="block text-xs font-semibold text-stone-700 mb-1.5">
+                  Nombre del Local *
+                </label>
+                <div className="relative">
+                  <Store
+                    className="h-4 w-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2"
+                    strokeWidth={1.75}
+                  />
+                  <input
+                    type="text"
+                    required
+                    value={nombre}
+                    onChange={(e) => setNombre(e.target.value)}
+                    placeholder="Ej. Panadería San José"
+                    className="w-full rounded-xl border border-stone-200/90 bg-white pl-9 pr-3 py-2 text-sm text-stone-900 focus:border-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all duration-200"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-stone-700 mb-1.5">
+                  Rubro *
+                </label>
+                <div className="relative">
+                  <Tag
+                    className="h-4 w-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2"
+                    strokeWidth={1.75}
+                  />
+                  <select
+                    value={rubro}
+                    onChange={(e) => setRubro(e.target.value)}
+                    className="w-full rounded-xl border border-stone-200/90 pl-9 pr-3 py-2 text-sm bg-white text-stone-900 focus:border-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all duration-200"
+                  >
+                    {RUBROS.map((cat) => (
+                      <option key={cat.value} value={cat.value}>
+                        {cat.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label className="block text-xs font-semibold text-stone-700 mb-1.5">
+                  Dirección / Sucursal *
+                </label>
+                <AddressAutocomplete
+                  value={direccion}
+                  onChange={setDireccion}
+                  onSelectLocation={handleSelectAddressSuggestion}
+                  placeholder="Ej. Av. Corrientes 1234, CABA"
                 />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-stone-700 mb-1.5">
+                  PIN Mostrador (4 dígitos) *
+                </label>
+                <div className="relative">
+                  <KeyRound
+                    className="h-4 w-4 text-orange-600 absolute left-3 top-1/2 -translate-y-1/2"
+                    strokeWidth={1.75}
+                  />
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    pattern="\d{4}"
+                    maxLength={4}
+                    required
+                    value={pinMostrador}
+                    onChange={(e) =>
+                      setPinMostrador(e.target.value.replace(/\D/g, '').slice(0, 4))
+                    }
+                    placeholder="Ej. 1234"
+                    className="w-full rounded-xl border border-stone-200/90 bg-white pl-9 pr-3 py-2 font-mono text-sm font-bold tracking-widest text-stone-900 tabular-nums focus:border-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all duration-200"
+                  />
+                </div>
               </div>
             </div>
 
             <div>
               <label className="block text-xs font-semibold text-stone-700 mb-1.5">
-                Dirección / Sucursal (Autocompletado)
-              </label>
-              <AddressAutocomplete
-                value={direccion}
-                onChange={setDireccion}
-                onSelectLocation={handleSelectAddressSuggestion}
-                placeholder="Ej. Av. Corrientes 1234, CABA"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div>
-              <label className="block text-xs font-semibold text-stone-700 mb-1.5">
-                WhatsApp de Contacto *
+                WhatsApp de Contacto (opcional)
               </label>
               <div className="relative">
                 <Phone
@@ -244,7 +407,6 @@ export default function RegisterBusinessModal({
                 />
                 <input
                   type="tel"
-                  required
                   value={telefonoWhatsapp}
                   onChange={(e) => setTelefonoWhatsapp(e.target.value)}
                   placeholder="Ej. 5491123456789"
@@ -254,61 +416,38 @@ export default function RegisterBusinessModal({
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-stone-700 mb-1.5">
-                Rubro *
+              <label className="block text-xs font-semibold text-stone-700 mb-2 flex items-center gap-1.5">
+                <MapPin className="h-4 w-4 text-stone-500" strokeWidth={1.75} />
+                Ubicación de la Sucursal en el Mapa *
               </label>
-              <div className="relative">
-                <Tag
-                  className="h-4 w-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2"
-                  strokeWidth={1.75}
-                />
-                <select
-                  value={rubro}
-                  onChange={(e) => setRubro(e.target.value)}
-                  className="w-full rounded-xl border border-stone-200/90 pl-9 pr-3 py-2 text-sm bg-white text-stone-900 focus:border-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all duration-200"
-                >
-                  {RUBROS.map((cat) => (
-                    <option key={cat.value} value={cat.value}>
-                      {cat.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <LocationPicker position={location} onChange={setLocation} />
             </div>
-          </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-stone-700 mb-2 flex items-center gap-1.5">
-              <MapPin className="h-4 w-4 text-stone-500" strokeWidth={1.75} />
-              Ubicación de la Sucursal en el Mapa *
-            </label>
-            <LocationPicker position={location} onChange={setLocation} />
-          </div>
-
-          <div className="flex items-center justify-end gap-3 pt-3 border-t border-stone-200/80">
-            <button
-              type="button"
-              onClick={handleClose}
-              className="rounded-xl border border-stone-200/90 bg-white px-4 py-2.5 text-sm font-medium text-stone-600 hover:border-stone-300 hover:bg-stone-50 transition-all duration-200 cursor-pointer"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="font-display flex items-center justify-center gap-2 rounded-xl bg-orange-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-orange-700 disabled:opacity-60 transition-all duration-200 cursor-pointer"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" strokeWidth={1.75} />
-                  Guardando...
-                </>
-              ) : (
-                'Registrar Local'
-              )}
-            </button>
-          </div>
-        </form>
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-stone-200/80">
+              <button
+                type="button"
+                onClick={handleClose}
+                className="rounded-xl border border-stone-200/90 bg-white px-4 py-2.5 text-sm font-medium text-stone-600 hover:border-stone-300 hover:bg-stone-50 transition-all duration-200 cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                disabled={loading}
+                className="font-display flex items-center justify-center gap-2 rounded-xl bg-orange-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-orange-700 disabled:opacity-60 transition-all duration-200 cursor-pointer"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" strokeWidth={1.75} />
+                    Creando local...
+                  </>
+                ) : (
+                  'Crear Local y Generar Código'
+                )}
+              </button>
+            </div>
+          </form>
+        )}
       </div>
     </div>
   );

@@ -8,11 +8,14 @@ import {
   AlertCircle,
   CheckCircle2,
   UserCheck,
+  Store,
+  ShoppingBag,
 } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
   const [mode, setMode] = useState('login'); // 'login' | 'register'
+  const [rol, setRol] = useState('consumidor'); // 'consumidor' | 'jefe'
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -33,13 +36,13 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
     resetMessages();
   };
 
-  const syncUserProfileTable = async (user, trimmedName, trimmedEmail) => {
+  const syncUserProfileTable = async (user, trimmedName, trimmedEmail, selectedRol) => {
     if (!user?.id || !supabase) return;
     try {
       const { error } = await supabase.from('perfiles').upsert(
         {
           id: user.id,
-          user_id: user.id,
+          rol: selectedRol,
           nombre: trimmedName,
           full_name: trimmedName,
           email: trimmedEmail,
@@ -47,17 +50,16 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
         { onConflict: 'id' }
       );
       if (error) {
-        await supabase.from('profiles').upsert(
+        await supabase.from('perfiles').upsert(
           {
             id: user.id,
-            full_name: trimmedName,
-            username: trimmedName,
+            rol: selectedRol,
           },
           { onConflict: 'id' }
         );
       }
     } catch {
-      // Ignorar de forma segura si la tabla adicional de perfiles no existe
+      // Ignorar si hay columnas opcionales no presentes
     }
   };
 
@@ -108,7 +110,20 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
 
         if (error) throw error;
 
-        if (onAuthSuccess) onAuthSuccess(data.session);
+        let detectedRole =
+          data.session?.user?.user_metadata?.rol || null;
+        if (data.session?.user?.id) {
+          const { data: profileData } = await supabase
+            .from('perfiles')
+            .select('rol')
+            .eq('id', data.session.user.id)
+            .maybeSingle();
+          if (profileData?.rol) {
+            detectedRole = profileData.rol;
+          }
+        }
+
+        if (onAuthSuccess) onAuthSuccess(data.session, detectedRole);
         onClose();
       } else {
         const trimmedName = fullName.trim();
@@ -122,22 +137,35 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
               full_name: trimmedName,
               username: trimmedName,
               nombre: trimmedName,
+              rol,
             },
           },
         });
 
         if (error) throw error;
 
-        if (data?.user) {
-          await syncUserProfileTable(data.user, trimmedName, trimmedEmail);
+        let activeSession = data?.session || null;
+
+        if (!activeSession && data?.user) {
+          const { data: signInData } = await supabase.auth.signInWithPassword({
+            email: trimmedEmail,
+            password,
+          });
+          if (signInData?.session) {
+            activeSession = signInData.session;
+          }
         }
 
-        if (data?.session) {
-          if (onAuthSuccess) onAuthSuccess(data.session);
+        if (data?.user) {
+          await syncUserProfileTable(data.user, trimmedName, trimmedEmail, rol);
+        }
+
+        if (activeSession) {
+          if (onAuthSuccess) onAuthSuccess(activeSession, rol);
           onClose();
         } else {
           setInfoMsg(
-            'Cuenta creada con éxito. Si tienes activada la confirmación por correo, revisa tu bandeja de entrada para iniciar sesión.'
+            'Cuenta creada con éxito. Inicia sesión con tus credenciales.'
           );
           setPassword('');
           setConfirmPassword('');
@@ -166,7 +194,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
                 {mode === 'login' ? 'Ingresar a OfertAr' : 'Crear Cuenta en OfertAr'}
               </h2>
               <p className="text-xs text-stone-600">
-                Cuenta única para vecinos y comercios del barrio
+                Acceso directo para consumidores y dueños de comercio
               </p>
             </div>
           </div>
@@ -225,6 +253,61 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
                 strokeWidth={1.75}
               />
               <span>{infoMsg}</span>
+            </div>
+          )}
+
+          {mode === 'register' && (
+            <div>
+              <label className="block text-xs font-semibold text-stone-700 mb-2">
+                ¿Cómo vas a usar OfertAr? (Rol) *
+              </label>
+              <div className="grid grid-cols-2 gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setRol('consumidor')}
+                  className={`flex flex-col items-start gap-1 rounded-xl border p-3 text-left transition-all duration-200 cursor-pointer ${
+                    rol === 'consumidor'
+                      ? 'border-orange-600 bg-orange-50/70 text-stone-900 ring-2 ring-orange-500/20'
+                      : 'border-stone-200/80 bg-white text-stone-600 hover:border-stone-300'
+                  }`}
+                >
+                  <div className="flex items-center gap-1.5 font-display text-xs font-bold text-stone-900">
+                    <ShoppingBag
+                      className={`h-4 w-4 ${
+                        rol === 'consumidor' ? 'text-orange-600' : 'text-stone-400'
+                      }`}
+                      strokeWidth={1.75}
+                    />
+                    Consumidor
+                  </div>
+                  <span className="text-[11px] text-stone-600 leading-tight">
+                    Explorar ofertas y obtener cupones QR
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setRol('jefe')}
+                  className={`flex flex-col items-start gap-1 rounded-xl border p-3 text-left transition-all duration-200 cursor-pointer ${
+                    rol === 'jefe'
+                      ? 'border-orange-600 bg-orange-50/70 text-stone-900 ring-2 ring-orange-500/20'
+                      : 'border-stone-200/80 bg-white text-stone-600 hover:border-stone-300'
+                  }`}
+                >
+                  <div className="flex items-center gap-1.5 font-display text-xs font-bold text-stone-900">
+                    <Store
+                      className={`h-4 w-4 ${
+                        rol === 'jefe' ? 'text-orange-600' : 'text-stone-400'
+                      }`}
+                      strokeWidth={1.75}
+                    />
+                    Jefe de Comercio
+                  </div>
+                  <span className="text-[11px] text-stone-600 leading-tight">
+                    Crear local, publicar promos y ver métricas
+                  </span>
+                </button>
+              </div>
             </div>
           )}
 
@@ -327,6 +410,8 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
               </>
             ) : mode === 'login' ? (
               'Ingresar'
+            ) : rol === 'jefe' ? (
+              'Crear Cuenta de Jefe y Configurar Local'
             ) : (
               'Crear Cuenta'
             )}

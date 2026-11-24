@@ -210,10 +210,10 @@ export default function RepublishPromoModal({
                 id="modal-republish-title"
                 className="font-display text-lg font-bold text-stone-900"
               >
-                Republicar Promoción
+                Editar / Republicar Promoción
               </h2>
               <p className="text-xs text-stone-600">
-                Elige el formato y su nueva vigencia para reactivarla
+                Actualiza el título, descripción, formato y vigencia de la oferta
               </p>
             </div>
           </div>

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   X,
-  Ticket,
+  QrCode,
   Clock,
   Store,
   AlertCircle,
@@ -10,37 +10,53 @@ import {
   Check,
   RefreshCw,
   ShieldCheck,
-  Lock,
+  CheckCircle2,
 } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import QrCodeSvg from './QrCodeSvg';
 
-const TOTAL_SECONDS = 5 * 60; // 5 minutos = 300 segundos
-
-function formatMMSS(totalSeconds) {
-  const safeSecs = Math.max(0, Math.floor(totalSeconds));
-  const mins = Math.floor(safeSecs / 60);
-  const secs = safeSecs % 60;
-  return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+function resolveCouponStatus(cupon) {
+  if (!cupon) return 'pendiente';
+  const raw = String(cupon.estado || 'pendiente').toLowerCase();
+  if (raw === 'completado' || raw === 'canjeado') return 'completado';
+  if (raw === 'vencido' || raw === 'expirado') return 'vencido';
+  const exp = cupon.expires_at || cupon.expira_at;
+  if (exp && new Date(exp) <= new Date()) {
+    return 'vencido';
+  }
+  return 'pendiente';
 }
 
-export default function ModalCanjeTemporal({ isOpen, promo, onClose }) {
+export default function ModalCanjeTemporal({
+  isOpen,
+  promo,
+  session,
+  onRequireAuth,
+  onClose,
+}) {
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState(null);
-  const [pinData, setPinData] = useState(null);
-  const [secondsLeft, setSecondsLeft] = useState(TOTAL_SECONDS);
-  const [copied, setCopied] = useState(false);
+  const [cuponData, setCuponData] = useState(null);
+  const [copiedCode, setCopiedCode] = useState(false);
 
   const promoId = promo?.id ?? promo?.promo_id ?? promo?.promocion_id ?? null;
+  const userId = session?.user?.id ?? null;
   const comercioNombre =
     promo?.comercio_nombre ||
     promo?.nombre_comercio ||
     promo?.comercios?.nombre ||
     'Comercio adherido';
 
-  const generarPin = useCallback(async () => {
+  const reclamarCuponQr = useCallback(async () => {
     if (!promoId) {
       setErrorMsg('No se encontró el identificador de la promoción.');
       setLoading(false);
+      return;
+    }
+
+    if (!userId) {
+      setLoading(false);
+      if (onRequireAuth) onRequireAuth();
       return;
     }
 
@@ -52,47 +68,37 @@ export default function ModalCanjeTemporal({ isOpen, promo, onClose }) {
 
     setLoading(true);
     setErrorMsg(null);
-    setPinData(null);
+    setCuponData(null);
 
     try {
-      const { data, error } = await supabase.rpc('generar_pin_canje', {
+      const { data, error } = await supabase.rpc('generar_cupon_qr', {
         p_promocion_id: promoId,
+        p_usuario_id: userId,
       });
 
       if (error) {
         throw new Error(
-          error.message ||
-            'No se pudo generar el PIN. Asegúrate de haber ejecutado supabase/canjes_y_metricas.sql.'
+          error.message || 'No se pudo generar el cupón QR para esta oferta.'
         );
       }
 
-      if (!data || data.ok === false) {
+      const record = Array.isArray(data) ? data[0] : data;
+      if (!record || record.ok === false) {
         throw new Error(
-          data?.mensaje ||
-            'No fue posible generar el código de canje para esta oferta.'
+          record?.mensaje ||
+            record?.error ||
+            'No fue posible emitir el cupón QR.'
         );
       }
 
-      setPinData(data);
-
-      if (data.expira_at) {
-        const diffSecs = Math.round(
-          (new Date(data.expira_at).getTime() - Date.now()) / 1000
-        );
-        setSecondsLeft(
-          diffSecs > 0 && diffSecs <= TOTAL_SECONDS ? diffSecs : TOTAL_SECONDS
-        );
-      } else {
-        setSecondsLeft(TOTAL_SECONDS);
-      }
+      const normalized = record.cupon ? record.cupon : record;
+      setCuponData(normalized);
     } catch (err) {
-      setErrorMsg(
-        err.message || 'Ocurrió un error al generar el PIN temporal.'
-      );
+      setErrorMsg(err.message || 'Ocurrió un error al generar tu cupón QR.');
     } finally {
       setLoading(false);
     }
-  }, [promoId]);
+  }, [promoId, userId, onRequireAuth]);
 
   useEffect(() => {
     if (!isOpen || !promoId) return;
@@ -101,7 +107,7 @@ export default function ModalCanjeTemporal({ isOpen, promo, onClose }) {
     const init = async () => {
       await Promise.resolve();
       if (!cancelled) {
-        generarPin();
+        reclamarCuponQr();
       }
     };
     init();
@@ -109,42 +115,30 @@ export default function ModalCanjeTemporal({ isOpen, promo, onClose }) {
     return () => {
       cancelled = true;
     };
-  }, [isOpen, promoId, generarPin]);
-
-  // Temporizador regresivo en vivo segundo a segundo (05:00 -> 00:00)
-  useEffect(() => {
-    if (!isOpen || !pinData?.pin || secondsLeft <= 0) return;
-
-    const interval = setInterval(() => {
-      setSecondsLeft((prev) => {
-        if (prev <= 1) {
-          clearInterval(interval);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [isOpen, pinData?.pin, secondsLeft]);
+  }, [isOpen, promoId, reclamarCuponQr]);
 
   if (!isOpen || !promo) return null;
 
-  const isExpired = Boolean(pinData?.pin && secondsLeft <= 0);
-  const progressPercent = Math.max(
-    0,
-    Math.min(100, (secondsLeft / TOTAL_SECONDS) * 100)
-  );
-  const pinCharacters = String(pinData?.pin || '------')
-    .toUpperCase()
-    .split('');
+  const tokenQr =
+    cuponData?.token_qr ||
+    cuponData?.token ||
+    cuponData?.codigo_corto ||
+    cuponData?.pin ||
+    '';
+  const codigoCorto =
+    cuponData?.codigo_corto ||
+    cuponData?.codigo ||
+    cuponData?.pin ||
+    'TP-0000';
+  const expiresAt = cuponData?.expires_at || cuponData?.expira_at || null;
+  const estadoActual = resolveCouponStatus(cuponData);
 
-  const handleCopyPin = async () => {
-    if (!pinData?.pin || isExpired) return;
+  const handleCopyShortCode = async () => {
+    if (!codigoCorto) return;
     try {
-      await navigator.clipboard.writeText(pinData.pin);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      await navigator.clipboard.writeText(codigoCorto);
+      setCopiedCode(true);
+      setTimeout(() => setCopiedCode(false), 2000);
     } catch {
       // Ignorar si clipboard no está disponible
     }
@@ -155,24 +149,24 @@ export default function ModalCanjeTemporal({ isOpen, promo, onClose }) {
       className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/50 p-4 backdrop-blur-xs overflow-y-auto"
       role="dialog"
       aria-modal="true"
-      aria-labelledby="modal-canje-temporal-title"
+      aria-labelledby="modal-cupon-qr-title"
     >
       <div className="relative my-8 w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-sm border border-stone-200/80">
-        {/* Cabecera limpia editorial */}
+        {/* Cabecera */}
         <div className="flex items-center justify-between border-b border-stone-200/80 bg-[#FAFAF9] px-6 py-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-50 text-orange-700 border border-orange-200/60">
-              <Ticket className="h-5 w-5" strokeWidth={1.75} />
+              <QrCode className="h-5 w-5" strokeWidth={1.75} />
             </div>
             <div>
               <h2
-                id="modal-canje-temporal-title"
+                id="modal-cupon-qr-title"
                 className="font-display text-base font-bold text-stone-900 leading-tight"
               >
-                Canje Temporal en Mostrador
+                Tu Cupón QR de Descuento
               </h2>
               <p className="text-xs text-stone-600">
-                Token efímero de validación presencial (5 min)
+                Presenta este QR o el código corto en el mostrador
               </p>
             </div>
           </div>
@@ -197,12 +191,9 @@ export default function ModalCanjeTemporal({ isOpen, promo, onClose }) {
             <h3 className="font-display text-sm font-bold text-stone-900 line-clamp-2">
               {promo.titulo}
             </h3>
-            {pinData?.stock_disponible != null && (
-              <p className="text-[11px] font-medium text-stone-600 tabular-nums">
-                Cupos disponibles:{' '}
-                <strong className="text-orange-700">
-                  {pinData.stock_disponible}
-                </strong>
+            {promo.descripcion && (
+              <p className="text-xs text-stone-600 line-clamp-2">
+                {promo.descripcion}
               </p>
             )}
           </div>
@@ -214,7 +205,7 @@ export default function ModalCanjeTemporal({ isOpen, promo, onClose }) {
                 strokeWidth={1.75}
               />
               <p className="text-sm font-medium">
-                Generando tu PIN único de canje...
+                Generando tu cupón QR personal...
               </p>
             </div>
           ) : errorMsg ? (
@@ -228,7 +219,7 @@ export default function ModalCanjeTemporal({ isOpen, promo, onClose }) {
               </div>
               <button
                 type="button"
-                onClick={generarPin}
+                onClick={reclamarCuponQr}
                 className="font-display w-full inline-flex items-center justify-center gap-2 rounded-xl bg-orange-600 px-4 py-2.5 text-xs sm:text-sm font-bold text-white hover:bg-orange-700 transition-all duration-200 cursor-pointer"
               >
                 <RefreshCw className="h-4 w-4" strokeWidth={1.75} />
@@ -237,133 +228,96 @@ export default function ModalCanjeTemporal({ isOpen, promo, onClose }) {
             </div>
           ) : (
             <>
-              {/* Visualización del PIN de 6 caracteres */}
-              <div className="relative">
-                <div
-                  className={`rounded-2xl border p-5 text-center transition-all duration-200 ${
-                    isExpired
-                      ? 'border-stone-200 bg-stone-100/80 opacity-60 select-none'
-                      : 'border-orange-200/80 bg-orange-50/40'
-                  }`}
-                >
-                  <span className="text-[11px] font-bold uppercase tracking-widest text-stone-500">
-                    Código PIN de Verificación
+              {/* Tarjeta del QR y Código Corto */}
+              <div className="rounded-2xl border border-orange-200/80 bg-orange-50/35 p-5 text-center space-y-4">
+                <div className="flex items-center justify-center gap-2">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-stone-500">
+                    Estado del cupón:
                   </span>
-
-                  <div className="mt-3 flex items-center justify-center gap-2">
-                    {pinCharacters.map((char, index) => (
-                      <span
-                        key={index}
-                        className={`flex h-12 w-10 sm:h-14 sm:w-11 items-center justify-center rounded-xl border text-xl sm:text-2xl font-bold font-mono tabular-nums shadow-xs ${
-                          isExpired
-                            ? 'border-stone-300 bg-stone-200/70 text-stone-400 line-through'
-                            : 'border-orange-200/90 bg-white text-stone-900'
-                        }`}
-                      >
-                        {char}
-                      </span>
-                    ))}
-                  </div>
-
-                  {!isExpired && (
-                    <div className="mt-3.5 flex justify-center">
-                      <button
-                        type="button"
-                        onClick={handleCopyPin}
-                        className="inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-stone-700 border border-stone-200/90 hover:border-orange-300 hover:bg-orange-50/40 transition-all duration-200 cursor-pointer"
-                      >
-                        {copied ? (
-                          <>
-                            <Check
-                              className="h-3.5 w-3.5 text-orange-600"
-                              strokeWidth={1.75}
-                            />
-                            Código copiado
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="h-3.5 w-3.5" strokeWidth={1.75} />
-                            Copiar código
-                          </>
-                        )}
-                      </button>
-                    </div>
+                  {estadoActual === 'completado' ? (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-orange-100 border border-orange-300 px-2.5 py-0.5 text-xs font-bold text-orange-800 capitalize">
+                      <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={1.75} />
+                      completado
+                    </span>
+                  ) : estadoActual === 'vencido' ? (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-red-50 border border-red-200 px-2.5 py-0.5 text-xs font-bold text-red-700 capitalize">
+                      <Clock className="h-3.5 w-3.5" strokeWidth={1.75} />
+                      vencido
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-orange-600 px-2.5 py-0.5 text-xs font-bold text-white capitalize shadow-2xs">
+                      <Clock className="h-3.5 w-3.5" strokeWidth={1.75} />
+                      pendiente
+                    </span>
                   )}
                 </div>
 
-                {/* Bloqueo cuando el PIN expira */}
-                {isExpired && (
-                  <div className="mt-3 rounded-xl border border-amber-200/80 bg-amber-50 p-3.5 text-center space-y-2">
-                    <div className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-800">
-                      <Lock className="h-4 w-4" strokeWidth={1.75} />
-                      CÓDIGO PIN EXPIRADO (00:00)
-                    </div>
-                    <p className="text-xs text-amber-800/90">
-                      Por seguridad, la validez de 5 minutos ha caducado. Genera un nuevo PIN frente al mostrador.
-                    </p>
+                {/* Código QR */}
+                <div className="inline-block rounded-2xl border border-orange-200/90 bg-white p-3.5 shadow-xs">
+                  <QrCodeSvg value={tokenQr || codigoCorto} size={188} />
+                </div>
+
+                {/* Código Corto (TP-XXXX) debajo del QR */}
+                <div className="space-y-1.5">
+                  <span className="block text-[11px] font-bold uppercase tracking-widest text-stone-500">
+                    Código Corto de Mostrador
+                  </span>
+                  <div className="inline-flex items-center gap-2 rounded-xl border border-orange-200/90 bg-white px-4 py-2 shadow-2xs">
+                    <span className="font-mono text-xl font-extrabold tracking-wider text-orange-600 tabular-nums">
+                      {codigoCorto}
+                    </span>
                     <button
                       type="button"
-                      onClick={generarPin}
-                      className="font-display inline-flex items-center justify-center gap-1.5 rounded-xl bg-orange-600 px-4 py-2 text-xs font-bold text-white hover:bg-orange-700 transition-all duration-200 cursor-pointer"
+                      onClick={handleCopyShortCode}
+                      className="rounded-lg border border-stone-200 bg-[#FAFAF9] px-2.5 py-1 text-xs font-semibold text-stone-700 hover:border-orange-300 hover:bg-orange-50/50 transition-colors cursor-pointer"
                     >
-                      <RefreshCw className="h-3.5 w-3.5" strokeWidth={1.75} />
-                      Generar nuevo PIN (5 min)
+                      {copiedCode ? (
+                        <span className="inline-flex items-center gap-1 text-orange-700">
+                          <Check className="h-3.5 w-3.5" strokeWidth={1.75} />
+                          Copiado
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1">
+                          <Copy className="h-3.5 w-3.5" strokeWidth={1.75} />
+                          Copiar
+                        </span>
+                      )}
                     </button>
+                  </div>
+                </div>
+
+                {/* Fecha / Hora de expiración (expires_at) */}
+                {expiresAt && (
+                  <div className="flex items-center justify-center gap-1.5 text-xs font-semibold text-stone-700 tabular-nums pt-1">
+                    <Clock
+                      className="h-4 w-4 text-orange-600 shrink-0"
+                      strokeWidth={1.75}
+                    />
+                    <span>
+                      Expira el:{' '}
+                      <strong className="text-stone-900">
+                        {new Date(expiresAt).toLocaleString('es-AR', {
+                          day: '2-digit',
+                          month: '2-digit',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </strong>
+                    </span>
                   </div>
                 )}
               </div>
 
-              {/* Temporizador regresivo en vivo MM:SS con tabular-nums y barra de progreso */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="font-medium text-stone-600 flex items-center gap-1.5">
-                    <Clock
-                      strokeWidth={1.75}
-                      className={`h-4 w-4 ${
-                        isExpired
-                          ? 'text-red-500'
-                          : secondsLeft <= 60
-                            ? 'text-amber-600 animate-pulse'
-                            : 'text-orange-600'
-                      }`}
-                    />
-                    Tiempo restante de validez:
-                  </span>
-                  <span
-                    className={`font-display text-base font-extrabold tabular-nums ${
-                      isExpired
-                        ? 'text-red-600'
-                        : secondsLeft <= 60
-                          ? 'text-amber-700'
-                          : 'text-orange-700'
-                    }`}
-                  >
-                    {formatMMSS(secondsLeft)}
-                  </span>
-                </div>
-
-                <div className="h-2 w-full overflow-hidden rounded-full bg-stone-200/80">
-                  <div
-                    className={`h-full transition-all duration-1000 rounded-full ${
-                      isExpired
-                        ? 'bg-red-500'
-                        : secondsLeft <= 60
-                          ? 'bg-amber-500'
-                          : 'bg-orange-600'
-                    }`}
-                    style={{ width: `${progressPercent}%` }}
-                  />
-                </div>
-              </div>
-
-              {/* Instrucciones para el vecino */}
+              {/* Instrucciones */}
               <div className="rounded-xl border border-orange-200/60 bg-orange-50/60 p-3.5 flex items-start gap-2.5 text-xs text-orange-950">
                 <ShieldCheck
                   className="h-4 w-4 text-orange-600 shrink-0 mt-0.5"
                   strokeWidth={1.75}
                 />
                 <span>
-                  Muestra este código de 6 caracteres al comerciante en el local. Al validarlo en su panel, se aplicará tu promoción automáticamente.
+                  Muestra este código QR o dicta el código corto{' '}
+                  <strong className="font-mono">{codigoCorto}</strong> al empleado en el mostrador para validar tu descuento.
                 </span>
               </div>
             </>
