@@ -49,6 +49,7 @@ import PanelCanjesYMetricas from './components/PanelCanjesYMetricas';
 import LocationPicker from './components/LocationPicker';
 import MostradorView from './components/MostradorView';
 import CouponValidatorBox from './components/CouponValidatorBox';
+import MisPromocionesYCupones from './components/MisPromocionesYCupones';
 
 const OBELISCO_CABA = { lat: -34.6037, lng: -58.3816 };
 
@@ -254,11 +255,6 @@ export default function App() {
       window.removeEventListener('hashchange', checkRoute);
     };
   }, []);
-
-  const navigateToMostrador = () => {
-    window.history.pushState({}, '', '/mostrador');
-    setIsMostradorRoute(true);
-  };
 
   const navigateToHome = () => {
     window.history.pushState({}, '', '/');
@@ -1112,15 +1108,6 @@ export default function App() {
 
             {/* Acciones rápidas derechas */}
             <div className="flex items-center gap-2.5 sm:gap-3">
-              <button
-                type="button"
-                onClick={navigateToMostrador}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-stone-200/90 bg-white px-3 py-1.5 text-xs font-semibold text-stone-600 hover:border-orange-300 hover:text-orange-700 transition-all duration-200 cursor-pointer"
-              >
-                <KeyRound className="h-3.5 w-3.5 text-orange-600" strokeWidth={1.75} />
-                Acceso Mostrador
-              </button>
-
               {!session ? (
                 <button
                   type="button"
@@ -1542,6 +1529,13 @@ export default function App() {
                     </div>
                   )}
                 </div>
+
+                {/* Sección interna: Mis Promociones y Cupones (Historial completo de cupones_qr) */}
+                <MisPromocionesYCupones
+                  userId={session.user.id}
+                  refreshTrigger={refreshKey}
+                  onExplorePromos={() => handleSelectTab('explorar')}
+                />
 
                 {/* Sección interna: Mis Ofertas Guardadas */}
                 <div className="rounded-2xl border border-stone-200/80 bg-white p-6 sm:p-8 shadow-sm space-y-5">
@@ -2475,7 +2469,10 @@ export default function App() {
           setPromoForCanje(null);
           setIsAuthModalOpen(true);
         }}
-        onClose={() => setPromoForCanje(null)}
+        onClose={() => {
+          setPromoForCanje(null);
+          setRefreshKey((prev) => prev + 1);
+        }}
       />
 
       {/* Modal de Detalle de Promoción (registra vista_oferta y permite Obtener Cupón QR) */}
@@ -2824,21 +2821,8 @@ export default function App() {
       />
 
       <footer className="border-t border-stone-200/80 bg-white py-5 text-center text-xs text-stone-500">
-        <div className="mx-auto max-w-7xl px-4 flex flex-wrap items-center justify-between gap-3">
-          <span>
-            OfertAr &copy; {new Date().getFullYear()} — Plataforma de promociones barriales.
-          </span>
-          <a
-            href="/mostrador"
-            onClick={(e) => {
-              e.preventDefault();
-              navigateToMostrador();
-            }}
-            className="inline-flex items-center gap-1.5 font-semibold text-stone-600 hover:text-orange-600 transition-colors cursor-pointer"
-          >
-            <KeyRound className="h-3.5 w-3.5 text-orange-600" strokeWidth={1.75} />
-            Acceso Mostrador
-          </a>
+        <div className="mx-auto max-w-7xl px-4">
+          OfertAr &copy; {new Date().getFullYear()} — Plataforma de promociones barriales.
         </div>
       </footer>
     </div>
